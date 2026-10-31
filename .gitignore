@@ -1,0 +1,12 @@
+# IDE
+.idea/
+
+# Git
+.git/
+
+# .NET build
+bin/
+obj/
+
+# Local configuration
+appsettings.Development.json
