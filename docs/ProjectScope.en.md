@@ -52,8 +52,9 @@ The first version focuses on the core domain needed to manage subscriptions. The
 
 | Entity | Purpose |
 |---|---|
-| **Subscription** | A recurring payment the user wants to track (service name, cost, billing cycle, renewal date, status, price history). |
+| **Subscription** | A recurring payment the user wants to track (service name, cost, billing cycle, renewal date, status). |
 | **Category** | Groups subscriptions by type (e.g. Streaming, Software, Fitness) to organize and filter expenses. |
+| **PriceHistory** | Records each price change of a subscription (old price, new price, date) so changes over time can be tracked. |
 
 > The application is single-tenant and local-only, so a `User` entity is not needed for the MVP — there's no login and no multi-user data to distinguish. It may be introduced later if cloud sync or multi-user support is added (see [Out of Scope](#-out-of-scope-mvp)).
 

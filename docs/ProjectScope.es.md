@@ -52,8 +52,9 @@ La primera versión se centra en el dominio esencial necesario para gestionar su
 
 | Entidad | Propósito |
 |---|---|
-| **Subscription (Suscripción)** | Un pago recurrente que el usuario quiere controlar (nombre del servicio, coste, ciclo de facturación, fecha de renovación, estado, historial de precios). |
+| **Subscription (Suscripción)** | Un pago recurrente que el usuario quiere controlar (nombre del servicio, coste, ciclo de facturación, fecha de renovación, estado). |
 | **Category (Categoría)** | Agrupa las suscripciones por tipo (p. ej. Streaming, Software, Fitness) para organizar y filtrar los gastos. |
+| **PriceHistory (Historial de precios)** | Registra cada cambio de precio de una suscripción (precio anterior, precio nuevo, fecha) para poder consultar su evolución. |
 
 > La aplicación es mono-usuario y de uso exclusivamente local, por lo que no se necesita una entidad `User` en el MVP — no hay login ni datos de varios usuarios que distinguir. Podría introducirse más adelante si se añade sincronización en la nube o soporte multiusuario (ver [Fuera de alcance](#-fuera-de-alcance-mvp)).
 
