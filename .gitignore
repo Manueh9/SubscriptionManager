@@ -10,3 +10,8 @@ obj/
 
 # Local configuration
 appsettings.Development.json
+
+# Local SQLite database
+*.db
+*.db-shm
+*.db-wal

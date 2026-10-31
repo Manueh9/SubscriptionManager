@@ -1,7 +1,13 @@
+using Microsoft.EntityFrameworkCore;
+using SubscriptionManager.API.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContext<SubscriptionManagerDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
