@@ -52,9 +52,10 @@ The first version focuses on the core domain needed to manage subscriptions. The
 
 | Entity | Purpose |
 |---|---|
-| **User** | Represents the person using the application locally. |
 | **Subscription** | A recurring payment the user wants to track (service name, cost, billing cycle, renewal date, status, price history). |
 | **Category** | Groups subscriptions by type (e.g. Streaming, Software, Fitness) to organize and filter expenses. |
+
+> The application is single-tenant and local-only, so a `User` entity is not needed for the MVP — there's no login and no multi-user data to distinguish. It may be introduced later if cloud sync or multi-user support is added (see [Out of Scope](#-out-of-scope-mvp)).
 
 > ⚠️ **Note:** this table lists the core entities agreed on for the MVP. Attributes, relationships, and validation rules will be defined when the domain model is implemented.
 

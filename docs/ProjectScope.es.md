@@ -52,9 +52,10 @@ La primera versión se centra en el dominio esencial necesario para gestionar su
 
 | Entidad | Propósito |
 |---|---|
-| **User (Usuario)** | Representa a la persona que usa la aplicación de forma local. |
 | **Subscription (Suscripción)** | Un pago recurrente que el usuario quiere controlar (nombre del servicio, coste, ciclo de facturación, fecha de renovación, estado, historial de precios). |
 | **Category (Categoría)** | Agrupa las suscripciones por tipo (p. ej. Streaming, Software, Fitness) para organizar y filtrar los gastos. |
+
+> La aplicación es mono-usuario y de uso exclusivamente local, por lo que no se necesita una entidad `User` en el MVP — no hay login ni datos de varios usuarios que distinguir. Podría introducirse más adelante si se añade sincronización en la nube o soporte multiusuario (ver [Fuera de alcance](#-fuera-de-alcance-mvp)).
 
 > ⚠️ **Nota:** esta tabla recoge las entidades principales acordadas para el MVP. Los atributos, relaciones y reglas de validación se definirán al implementar el modelo de dominio.
 
