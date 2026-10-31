@@ -97,10 +97,19 @@ flowchart LR
 SubscriptionManager/
 ├── backend/
 │   ├── src/
-│   │   └── SubscriptionManager.API/   # API Web de ASP.NET Core
-│   └── tests/                         # Proyecto(s) de tests con xUnit
-├── frontend/                          # Aplicación React + TypeScript + Vite
-└── docs/                              # Documentación del proyecto
+│   │   └── SubscriptionManager.API/
+│   │       ├── Domain/
+│   │       │   ├── Entities/           # Category, Subscription, PriceHistory
+│   │       │   └── enum/               # BillingCycle, SubscriptionStatus
+│   │       ├── Infrastructure/
+│   │       │   └── Persistence/
+│   │       │       ├── Configurations/ # Configuración Fluent API de EF Core por entidad
+│   │       │       └── SubscriptionManagerDbContext.cs
+│   │       ├── Migrations/             # Migraciones de EF Core (historial del esquema SQLite)
+│   │       └── Program.cs
+│   └── tests/                          # Proyecto(s) de tests con xUnit
+├── frontend/                           # Aplicación React + TypeScript + Vite
+└── docs/                               # Documentación del proyecto
 ```
 
 ---
