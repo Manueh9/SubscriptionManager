@@ -1,0 +1,41 @@
+@HostAddress = http://localhost:5166
+
+### Get all categories
+GET {{HostAddress}}/api/Categories
+Accept: application/json
+
+### Create a category
+# @name createCategory
+POST {{HostAddress}}/api/Categories
+Content-Type: application/json
+
+{
+  "name": "Streaming"
+}
+
+### Get the category created above
+GET {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
+Accept: application/json
+
+### Update the category created above
+PUT {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "name": "Streaming & VOD"
+}
+
+### Delete the category created above
+DELETE {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
+
+### Get a category that doesn't exist -> expect 404
+GET {{HostAddress}}/api/Categories/999999
+Accept: application/json
+
+### Create a category with an empty name -> currently 500 (see docs/Api known gap)
+POST {{HostAddress}}/api/Categories
+Content-Type: application/json
+
+{
+  "name": ""
+}
