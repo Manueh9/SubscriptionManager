@@ -48,7 +48,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
             return NotFound();
         }
 
-        return Ok(new CategoryResponse(category.Id, category.Name, category.CreatedAt));
+        return Ok(ToResponse(category));
     }
 
     #endregion
@@ -73,10 +73,17 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
         var category = new Category(request.Name);
 
         dbContext.Categories.Add(category);
-        await dbContext.SaveChangesAsync();
 
-        var response = new CategoryResponse(category.Id, category.Name, category.CreatedAt);
-        return CreatedAtAction(nameof(GetById), new { id = category.Id }, response);
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict($"A category named '{request.Name}' already exists.");
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = category.Id }, ToResponse(category));
     }
 
     #endregion
@@ -107,7 +114,15 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
         }
 
         category.Rename(request.Name);
-        await dbContext.SaveChangesAsync();
+
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict($"A category named '{request.Name}' already exists.");
+        }
 
         return NoContent();
     }
@@ -138,4 +153,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
     }
 
     #endregion
+
+    private static CategoryResponse ToResponse(Category category) =>
+        new(category.Id, category.Name, category.CreatedAt);
 }

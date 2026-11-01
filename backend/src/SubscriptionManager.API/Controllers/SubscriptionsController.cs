@@ -98,7 +98,15 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
             category);
 
         dbContext.Subscriptions.Add(subscription);
-        await dbContext.SaveChangesAsync();
+
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict($"A subscription named '{request.Name}' already exists in this category.");
+        }
 
         return CreatedAtAction(nameof(GetById), new { id = subscription.Id }, ToResponse(subscription));
     }
@@ -139,7 +147,15 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
         }
 
         subscription.UpdateDetails(request.Name, request.Description, request.BillingCycle, request.StartDate, request.EndDate, category);
-        await dbContext.SaveChangesAsync();
+
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict($"A subscription named '{request.Name}' already exists in this category.");
+        }
 
         return NoContent();
     }
