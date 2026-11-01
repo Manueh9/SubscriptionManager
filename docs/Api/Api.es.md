@@ -8,7 +8,7 @@
 
 ## 📋 Índice
 
-1. [Notas generales](#-notas-generales)
+1. [Notas generales](#known-gap)
 2. [Categories](#-categories)
 3. [Subscriptions](#-subscriptions)
 4. [Price Histories](#-price-histories)
@@ -16,7 +16,7 @@
 
 ---
 
-## ℹ️ Notas generales
+## ℹ️ Notas generales <a id="known-gap"></a>
 
 - URL base (desarrollo local): `http://localhost:<puerto>/api` (el puerto sale de `Properties/launchSettings.json`).
 - Todas las peticiones/respuestas usan `Content-Type: application/json`.
@@ -82,7 +82,7 @@ Cabecera `Location: /api/Categories/{id}`
 }
 ```
 
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#-notas-generales) de arriba; debería ser `400 Bad Request`).
+**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#known-gap) de arriba; debería ser `400 Bad Request`).
 
 ---
 
@@ -101,7 +101,7 @@ Renombra una categoría existente.
 
 **Respuesta `404 Not Found`** — no existe ninguna categoría con ese `id`.
 
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#-notas-generales) de arriba).
+**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#known-gap) de arriba).
 
 ---
 
@@ -137,7 +137,7 @@ Elimina una categoría.
 | `201 Created` | Recurso creado | `POST` exitoso. Incluye una cabecera `Location` apuntando al nuevo recurso. |
 | `204 No Content` | Éxito, sin cuerpo | `PUT`/`DELETE` exitosos. |
 | `404 Not Found` | El recurso no existe | `GET`/`PUT`/`DELETE` con un `id` que no está en la base de datos. |
-| `500 Internal Server Error` | Excepción sin manejar | Hoy también cubre fallos de validación y de restricciones de clave foránea — ver la [carencia conocida](#-notas-generales). |
+| `500 Internal Server Error` | Excepción sin manejar | Hoy también cubre fallos de validación y de restricciones de clave foránea — ver la [carencia conocida](#known-gap). |
 
 ---
 

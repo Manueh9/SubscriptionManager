@@ -8,7 +8,7 @@
 
 ## 📋 Table of Contents
 
-1. [General Notes](#-general-notes)
+1. [General Notes](#known-gap)
 2. [Categories](#-categories)
 3. [Subscriptions](#-subscriptions)
 4. [Price Histories](#-price-histories)
@@ -16,7 +16,7 @@
 
 ---
 
-## ℹ️ General Notes
+## ℹ️ General Notes <a id="known-gap"></a>
 
 - Base URL (local dev): `http://localhost:<port>/api` (port comes from `Properties/launchSettings.json`).
 - All requests/responses use `Content-Type: application/json`.
@@ -82,7 +82,7 @@ Header `Location: /api/Categories/{id}`
 }
 ```
 
-**Response `500 Internal Server Error`** — if `name` is empty/whitespace (see [known gap](#-general-notes) above; should be `400 Bad Request`).
+**Response `500 Internal Server Error`** — if `name` is empty/whitespace (see [known gap](#known-gap) above; should be `400 Bad Request`).
 
 ---
 
@@ -101,7 +101,7 @@ Renames an existing category.
 
 **Response `404 Not Found`** — no category exists with that `id`.
 
-**Response `500 Internal Server Error`** — if `name` is empty/whitespace (see [known gap](#-general-notes) above).
+**Response `500 Internal Server Error`** — if `name` is empty/whitespace (see [known gap](#known-gap) above).
 
 ---
 
@@ -137,7 +137,7 @@ Deletes a category.
 | `201 Created` | Resource created | Successful `POST`. Includes a `Location` header pointing to the new resource. |
 | `204 No Content` | Success, no body | Successful `PUT`/`DELETE`. |
 | `404 Not Found` | Resource doesn't exist | `GET`/`PUT`/`DELETE` with an `id` that isn't in the database. |
-| `500 Internal Server Error` | Unhandled exception | Currently also covers validation and FK-constraint failures — see the [known gap](#-general-notes). |
+| `500 Internal Server Error` | Unhandled exception | Currently also covers validation and FK-constraint failures — see the [known gap](#known-gap). |
 
 ---
 
