@@ -29,9 +29,13 @@ namespace SubscriptionManager.API.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Categories", (string)null);
                 });
@@ -89,7 +93,8 @@ namespace SubscriptionManager.API.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(10, 2)
@@ -107,6 +112,9 @@ namespace SubscriptionManager.API.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("Name", "CategoryId")
+                        .IsUnique();
 
                     b.ToTable("Subscriptions", (string)null);
                 });

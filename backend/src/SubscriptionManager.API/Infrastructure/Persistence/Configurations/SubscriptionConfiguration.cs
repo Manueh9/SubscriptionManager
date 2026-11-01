@@ -14,7 +14,11 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
 
         builder.Property(subscription => subscription.Name)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasMaxLength(200)
+            .UseCollation("NOCASE");
+
+        builder.HasIndex(subscription => new { subscription.Name, subscription.CategoryId })
+            .IsUnique();
 
         builder.Property(subscription => subscription.Description)
             .HasMaxLength(1000);

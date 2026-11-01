@@ -14,6 +14,10 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(category => category.Name)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasMaxLength(100)
+            .UseCollation("NOCASE");
+
+        builder.HasIndex(category => category.Name)
+            .IsUnique();
     }
 }

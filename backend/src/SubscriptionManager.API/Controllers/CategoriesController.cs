@@ -59,10 +59,17 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
     /// Creates a new category.
     /// </summary>
     /// <param name="request">Category data.</param>
-    /// <returns>201 with the created category.</returns>
+    /// <returns>201 with the created category, or 409 if the name is already in use.</returns>
     [HttpPost]
     public async Task<ActionResult<CategoryResponse>> Create(CategoryRequest request)
     {
+        var nameInUse = await dbContext.Categories.AnyAsync(c => c.Name == request.Name);
+
+        if (nameInUse)
+        {
+            return Conflict($"A category named '{request.Name}' already exists.");
+        }
+
         var category = new Category(request.Name);
 
         dbContext.Categories.Add(category);
@@ -81,7 +88,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
     /// </summary>
     /// <param name="id">Category id.</param>
     /// <param name="request">New category data.</param>
-    /// <returns>204 if updated, or 404 if the category doesn't exist.</returns>
+    /// <returns>204 if updated, 404 if the category doesn't exist, or 409 if the name is already in use.</returns>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CategoryRequest request)
     {
@@ -90,6 +97,13 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
         if (category is null)
         {
             return NotFound();
+        }
+
+        var nameInUse = await dbContext.Categories.AnyAsync(c => c.Name == request.Name && c.Id != id);
+
+        if (nameInUse)
+        {
+            return Conflict($"A category named '{request.Name}' already exists.");
         }
 
         category.Rename(request.Name);
