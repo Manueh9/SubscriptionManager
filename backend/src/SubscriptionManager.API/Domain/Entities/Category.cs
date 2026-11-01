@@ -14,6 +14,12 @@ public class Category
         CreatedAt = DateTime.UtcNow;
     }
 
+    public void Rename(string name)
+    {
+        EnsureIsValid(name);
+        Name = name;
+    }
+
     private static void EnsureIsValid(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
