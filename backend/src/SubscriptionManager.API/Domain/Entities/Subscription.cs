@@ -38,6 +38,20 @@ public class Subscription
         Status = SubscriptionStatus.Active;
     }
 
+    public void UpdateDetails(string name, string description, BillingCycle billingCycle, DateTime startDate, DateTime? endDate, Category category)
+    {
+        EnsureIsValid(name, Price);
+
+        Name = name;
+        Description = description;
+        BillingCycle = billingCycle;
+        StartDate = startDate;
+        EndDate = endDate;
+        Category = category;
+        CategoryId = category.Id;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     private static void EnsureIsValid(string name, decimal price)
     {
         if (string.IsNullOrWhiteSpace(name))
