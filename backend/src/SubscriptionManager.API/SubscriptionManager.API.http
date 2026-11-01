@@ -1,5 +1,7 @@
 @HostAddress = http://localhost:5166
 
+### ================= Categories =================
+
 ### Get all categories
 GET {{HostAddress}}/api/Categories
 Accept: application/json
@@ -11,6 +13,14 @@ Content-Type: application/json
 
 {
   "name": "Streaming"
+}
+
+### Create the same category name again -> expect 409
+POST {{HostAddress}}/api/Categories
+Content-Type: application/json
+
+{
+  "name": "streaming"
 }
 
 ### Get the category created above
@@ -25,9 +35,6 @@ Content-Type: application/json
   "name": "Streaming & VOD"
 }
 
-### Delete the category created above
-DELETE {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
-
 ### Get a category that doesn't exist -> expect 404
 GET {{HostAddress}}/api/Categories/999999
 Accept: application/json
@@ -39,3 +46,104 @@ Content-Type: application/json
 {
   "name": ""
 }
+
+### ================= Subscriptions =================
+
+### Create a second category to attach the subscription to
+# @name createCategoryForSubscription
+POST {{HostAddress}}/api/Categories
+Content-Type: application/json
+
+{
+  "name": "Software"
+}
+
+### Get all subscriptions
+GET {{HostAddress}}/api/Subscriptions
+Accept: application/json
+
+### Create a subscription
+# @name createSubscription
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "Netflix",
+  "description": "Streaming service",
+  "price": 12.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": {{createCategoryForSubscription.response.body.$.id}}
+}
+
+### Create the same subscription name in the same category again -> expect 409
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "NETFLIX",
+  "description": "Streaming service",
+  "price": 12.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": {{createCategoryForSubscription.response.body.$.id}}
+}
+
+### Create a subscription with a category that doesn't exist -> expect 400
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "Spotify",
+  "description": "Music",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": 999999
+}
+
+### Get the subscription created above
+GET {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
+Accept: application/json
+
+### Update the subscription created above (price is not editable here)
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "name": "Netflix Premium",
+  "description": "Updated plan",
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "endDate": null,
+  "categoryId": {{createCategoryForSubscription.response.body.$.id}}
+}
+
+### Get a subscription that doesn't exist -> expect 404
+GET {{HostAddress}}/api/Subscriptions/999999
+Accept: application/json
+
+### Delete the subscription created above
+DELETE {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
+
+### ================= Price Histories (read-only) =================
+
+### Get all price history records
+GET {{HostAddress}}/api/PriceHistories
+Accept: application/json
+
+### Get price history records filtered by subscription
+GET {{HostAddress}}/api/PriceHistories?subscriptionId={{createSubscription.response.body.$.id}}
+Accept: application/json
+
+### Get a price history record that doesn't exist -> expect 404
+GET {{HostAddress}}/api/PriceHistories/999999
+Accept: application/json
+
+### ================= Cleanup =================
+
+### Delete the category created for the subscription above
+DELETE {{HostAddress}}/api/Categories/{{createCategoryForSubscription.response.body.$.id}}
+
+### Delete the first category created above
+DELETE {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
