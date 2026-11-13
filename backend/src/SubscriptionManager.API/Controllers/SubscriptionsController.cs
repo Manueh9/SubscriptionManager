@@ -162,6 +162,34 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
 
     #endregion
 
+    #region Change Price
+
+    /// <summary>
+    /// Changes a subscription's price and records the change in its price history.
+    /// </summary>
+    /// <param name="id">Subscription id.</param>
+    /// <param name="request">The new price.</param>
+    /// <returns>200 with the updated subscription, 404 if the subscription doesn't exist, or 500 if the new price is invalid (see known gap).</returns>
+    [HttpPut("{id:int}/price")]
+    public async Task<ActionResult<SubscriptionResponse>> ChangePrice(int id, ChangePriceRequest request)
+    {
+        var subscription = await dbContext.Subscriptions.FindAsync(id);
+
+        if (subscription is null)
+        {
+            return NotFound();
+        }
+
+        var priceHistory = subscription.ChangePrice(request.NewPrice);
+
+        dbContext.PriceHistories.Add(priceHistory);
+        await dbContext.SaveChangesAsync();
+
+        return Ok(ToResponse(subscription));
+    }
+
+    #endregion
+
     #region Delete
 
     /// <summary>

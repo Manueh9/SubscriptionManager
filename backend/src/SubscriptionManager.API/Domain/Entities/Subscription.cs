@@ -38,6 +38,16 @@ public class Subscription
         Status = SubscriptionStatus.Active;
     }
 
+    public PriceHistory ChangePrice(decimal newPrice)
+    {
+        var priceHistory = new PriceHistory(this, Price, newPrice);
+
+        Price = newPrice;
+        UpdatedAt = DateTime.UtcNow;
+
+        return priceHistory;
+    }
+
     public void UpdateDetails(string name, string description, BillingCycle billingCycle, DateTime startDate, DateTime? endDate, Category category)
     {
         EnsureIsValid(name, Price);
