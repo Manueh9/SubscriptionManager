@@ -76,4 +76,36 @@ public class SubscriptionsEndpointsTests(WebApiFactory factory) : IClassFixture<
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task ChangeStatus_ReturnsOk_AndUpdatesStatus()
+    {
+        var categoryId = await CreateCategoryAsync();
+        var subscription = await CreateSubscriptionAsync(categoryId);
+
+        var response = await _client.PutAsJsonAsync($"/api/Subscriptions/{subscription.Id}/status", new ChangeStatusRequest(SubscriptionStatus.Paused));
+        var updated = await response.Content.ReadFromJsonAsync<SubscriptionResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(SubscriptionStatus.Paused, updated!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ReturnsBadRequest_WhenNewStatusEqualsCurrentStatus()
+    {
+        var categoryId = await CreateCategoryAsync();
+        var subscription = await CreateSubscriptionAsync(categoryId);
+
+        var response = await _client.PutAsJsonAsync($"/api/Subscriptions/{subscription.Id}/status", new ChangeStatusRequest(SubscriptionStatus.Active));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ReturnsNotFound_WhenSubscriptionDoesNotExist()
+    {
+        var response = await _client.PutAsJsonAsync("/api/Subscriptions/999999/status", new ChangeStatusRequest(SubscriptionStatus.Paused));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }

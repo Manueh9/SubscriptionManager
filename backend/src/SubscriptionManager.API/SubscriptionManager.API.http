@@ -147,6 +147,30 @@ Content-Type: application/json
   "newPrice": 5
 }
 
+### Change the status of the subscription created above to Paused -> expect 200
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 1
+}
+
+### Change it again to the SAME status -> expect 400
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 1
+}
+
+### Change the status of a subscription that doesn't exist -> expect 404
+PUT {{HostAddress}}/api/Subscriptions/999999/status
+Content-Type: application/json
+
+{
+  "newStatus": 1
+}
+
 ### Delete the category used by the subscription above while it still has a subscription -> expect 409
 DELETE {{HostAddress}}/api/Categories/{{createCategoryForSubscription.response.body.$.id}}
 
