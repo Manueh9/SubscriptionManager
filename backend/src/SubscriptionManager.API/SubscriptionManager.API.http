@@ -147,6 +147,10 @@ Content-Type: application/json
   "newPrice": 5
 }
 
+### Get the expenses summary while the subscription above is still Active -> expect 200
+GET {{HostAddress}}/api/Expenses/summary
+Accept: application/json
+
 ### Change the status of the subscription created above to Paused -> expect 200
 PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/status
 Content-Type: application/json
@@ -170,6 +174,10 @@ Content-Type: application/json
 {
   "newStatus": 1
 }
+
+### Get the expenses summary again, now that the subscription above is Paused -> expect 200 (excludes it)
+GET {{HostAddress}}/api/Expenses/summary
+Accept: application/json
 
 ### Delete the category used by the subscription above while it still has a subscription -> expect 409
 DELETE {{HostAddress}}/api/Categories/{{createCategoryForSubscription.response.body.$.id}}
