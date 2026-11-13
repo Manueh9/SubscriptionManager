@@ -135,7 +135,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
     /// Deletes a category.
     /// </summary>
     /// <param name="id">Category id.</param>
-    /// <returns>204 if deleted, or 404 if the category doesn't exist.</returns>
+    /// <returns>204 if deleted, 404 if the category doesn't exist, or 409 if it still has subscriptions assigned.</returns>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {

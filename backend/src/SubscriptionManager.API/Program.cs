@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SubscriptionManager.API.Infrastructure;
 using SubscriptionManager.API.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,10 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddExceptionHandler<ArgumentExceptionHandler>();
+builder.Services.AddExceptionHandler<DbUpdateExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddDbContext<SubscriptionManagerDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

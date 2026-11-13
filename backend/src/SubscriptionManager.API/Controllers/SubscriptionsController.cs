@@ -169,7 +169,7 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
     /// </summary>
     /// <param name="id">Subscription id.</param>
     /// <param name="request">The new price.</param>
-    /// <returns>200 with the updated subscription, 404 if the subscription doesn't exist, or 500 if the new price is invalid (see known gap).</returns>
+    /// <returns>200 with the updated subscription, 404 if the subscription doesn't exist, or 400 if the new price is negative or equal to the current price.</returns>
     [HttpPut("{id:int}/price")]
     public async Task<ActionResult<SubscriptionResponse>> ChangePrice(int id, ChangePriceRequest request)
     {
