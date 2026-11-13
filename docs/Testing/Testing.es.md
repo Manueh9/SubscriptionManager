@@ -11,7 +11,8 @@
 1. [Arrancar la API](#-arrancar-la-api)
 2. [Opción A — El fichero `.http`](#-opción-a--el-fichero-http)
 3. [Opción B — Bruno / Postman / Insomnia](#-opción-b--bruno--postman--insomnia)
-4. [Secuencia de pruebas sugerida](#-secuencia-de-pruebas-sugerida)
+4. [Opción C — Tests automatizados](#-opción-c--tests-automatizados)
+5. [Secuencia de pruebas sugerida](#-secuencia-de-pruebas-sugerida)
 
 ---
 
@@ -29,7 +30,7 @@ La consola imprime la URL en la que está escuchando, p. ej. `http://localhost:5
 
 ## 📄 Opción A — El fichero `.http`
 
-El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluido el endpoint de cambio de precio) y el `PriceHistories` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`/`500`.
+El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluido el endpoint de cambio de precio) y el `PriceHistories` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
 
 1. Ábrelo en **Rider** o **VS Code** (con la extensión *REST Client*).
 2. Pulsa "Send Request" (o la ▶️ que aparece encima de cada bloque) en cada petición separada por `###`, de arriba a abajo.
@@ -56,6 +57,18 @@ Content-Type: application/json
 
 ---
 
+## 🤖 Opción C — Tests automatizados
+
+`backend/tests/SubscriptionManager.API.Tests` es un proyecto xUnit que ejercita los mismos endpoints a través de `WebApplicationFactory`, contra una base de datos SQLite en memoria aislada (no hace falta arrancar el servidor a mano). Desde `backend/tests/SubscriptionManager.API.Tests`:
+
+```
+dotnet test
+```
+
+Hoy cubre el camino feliz de `Categories`, `Subscriptions` y `PriceHistories`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones). Ver [Notas generales](../Api/Api.es.md#notas-generales) en la Referencia de la API para más detalle.
+
+---
+
 ## ✅ Secuencia de pruebas sugerida
 
 Reproduce el flujo que ya verificamos mientras construíamos la API — un buen orden para ir probando a mano, copiando cada `id` de una respuesta a la siguiente petición:
@@ -68,13 +81,14 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 6. `GET /api/Subscriptions/{id}` con el id del paso 3. Esperado `200`.
 7. `PUT /api/Subscriptions/{id}` → cambia el nombre/fechas (el precio no es editable aquí a propósito). Esperado `204`.
 8. `PUT /api/Subscriptions/{id}/price` con `{ "newPrice": 14.99 }` → esperado `200` con la suscripción actualizada.
-9. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `500` (carencia conocida: la validación de precio igual/negativo todavía no está mapeada a `400`).
+9. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `400`.
 10. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con **un** registro mostrando el precio viejo/nuevo del paso 8.
-11. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
-12. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
-13. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
-14. `POST /api/Categories` con `"name": ""`. Esperado `500` — es la [carencia conocida](../Api/Api.es.md#known-gap) ya documentada, no un bug que tengas que arreglar.
+11. `DELETE /api/Categories/{id}` usando el id del paso 1, mientras la suscripción del paso 3 todavía existe → esperado `409`.
+12. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
+13. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
+14. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
+15. `POST /api/Categories` con `"name": ""`. Esperado `400`.
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-04</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-13</sub></p>

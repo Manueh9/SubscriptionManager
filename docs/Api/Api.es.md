@@ -8,7 +8,7 @@
 
 ## 📋 Índice
 
-1. [Notas generales](#known-gap)
+1. [Notas generales](#notas-generales)
 2. [Categories](#-categories)
 3. [Subscriptions](#-subscriptions)
 4. [Price Histories](#-price-histories)
@@ -16,13 +16,13 @@
 
 ---
 
-## ℹ️ Notas generales <a id="known-gap"></a>
+## ℹ️ Notas generales <a id="notas-generales"></a>
 
 - URL base (desarrollo local): `http://localhost:<puerto>/api` (el puerto sale de `Properties/launchSettings.json`).
 - Todas las peticiones/respuestas usan `Content-Type: application/json`.
 - Actualmente **no hay autenticación** — la app es local-first y mono-usuario (ver [Alcance del Proyecto](../ProjectScope/ProjectScope.es.md)).
-- ⚠️ **Carencia conocida:** todavía no hay middleware global de manejo de excepciones ni atributos de validación en los DTOs. Las validaciones del dominio (p. ej. un `name` vacío) lanzan un `ArgumentException` normal, que no se captura y hoy se traduce en `500 Internal Server Error` en vez de un `400 Bad Request` correcto. Se indica en cada endpoint afectado más abajo, y debería corregirse más adelante (atributos de validación + un middleware de excepciones que devuelva `ProblemDetails`).
-- ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos actúa como red de seguridad si dos peticiones llegan a la vez y superan esa comprobación — en cualquiera de los dos casos se devuelve `409`, nunca un `500` sin control.
+- ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce las violaciones de restricciones de la base de datos (`DbUpdateException` — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
+- ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos (capturada por `DbUpdateExceptionHandler` si dos peticiones llegan a la vez y superan esa comprobación) actúa como red de seguridad — en cualquiera de los dos casos se devuelve `409`, nunca un `500` sin control.
 
 ---
 
@@ -85,7 +85,7 @@ Cabecera `Location: /api/Categories/{id}`
 
 **Respuesta `409 Conflict`** — ya existe una categoría con ese `name` (sin distinguir mayúsculas/minúsculas).
 
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#known-gap) de arriba; debería ser `400 Bad Request`).
+**Respuesta `400 Bad Request`** — si `name` está vacío/en blanco.
 
 ---
 
@@ -106,7 +106,7 @@ Renombra una categoría existente.
 
 **Respuesta `409 Conflict`** — ya existe otra categoría con ese `name` (sin distinguir mayúsculas/minúsculas).
 
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#known-gap) de arriba).
+**Respuesta `400 Bad Request`** — si `name` está vacío/en blanco.
 
 ---
 
@@ -118,7 +118,7 @@ Elimina una categoría.
 
 **Respuesta `404 Not Found`** — no existe ninguna categoría con ese `id`.
 
-**Respuesta `500 Internal Server Error`** — si la categoría todavía tiene suscripciones asignadas. La base de datos aplica `ON DELETE RESTRICT` en `Subscriptions.CategoryId` (ver [Base de Datos](../Database/Database.es.md#-relaciones)), y el controller todavía no captura ese caso — se traduce en una `DbUpdateException` sin manejar en vez de un `409 Conflict` limpio.
+**Respuesta `409 Conflict`** — si la categoría todavía tiene suscripciones asignadas. La base de datos aplica `ON DELETE RESTRICT` en `Subscriptions.CategoryId` (ver [Base de Datos](../Database/Database.es.md#-relaciones)); la `DbUpdateException` resultante la traduce a `409` `DbUpdateExceptionHandler` (ver [Notas generales](#notas-generales)).
 
 ---
 
@@ -194,17 +194,15 @@ Cabecera `Location: /api/Subscriptions/{id}`
 }
 ```
 
-**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente.
+**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, o `name` está vacío/en blanco, o `price` es negativo.
 
 **Respuesta `409 Conflict`** — ya existe una suscripción con ese `name` en esa categoría (sin distinguir mayúsculas/minúsculas).
-
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco o `price` es negativo (ver la [carencia conocida](#known-gap) de arriba).
 
 ---
 
 ### `PUT /api/Subscriptions/{id}`
 
-Actualiza los datos de una suscripción. **El `price` no es editable aquí a propósito** — solo debería cambiar a través de un flujo dedicado de cambio de precio (todavía sin implementar), para que cada cambio quede registrado en [Price Histories](#-price-histories).
+Actualiza los datos de una suscripción. **El `price` no es editable aquí a propósito** — solo debería cambiar a través de `PUT /api/Subscriptions/{id}/price` (más abajo), para que cada cambio quede registrado en [Price Histories](#-price-histories).
 
 **Cuerpo de la petición**
 ```json
@@ -222,11 +220,9 @@ Actualiza los datos de una suscripción. **El `price` no es editable aquí a pro
 
 **Respuesta `404 Not Found`** — no existe ninguna suscripción con ese `id`.
 
-**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente.
+**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, o `name` está vacío/en blanco.
 
 **Respuesta `409 Conflict`** — ya existe otra suscripción con ese `name` en esa categoría.
-
-**Respuesta `500 Internal Server Error`** — si `name` está vacío/en blanco (ver la [carencia conocida](#known-gap) de arriba).
 
 ---
 
@@ -270,7 +266,7 @@ Cambia el precio de una suscripción y registra el cambio como una nueva entrada
 
 **Respuesta `404 Not Found`** — no existe ninguna suscripción con ese `id`.
 
-**Respuesta `500 Internal Server Error`** — si `newPrice` es negativo o igual al precio actual (ver la [carencia conocida](#known-gap) de arriba; debería ser `400 Bad Request`).
+**Respuesta `400 Bad Request`** — si `newPrice` es negativo o igual al precio actual.
 
 ---
 
@@ -320,11 +316,11 @@ Devuelve un registro de historial de precios concreto por su id.
 | `200 OK` | Éxito, con cuerpo de respuesta | Peticiones `GET` que encuentran datos, y `PUT /api/Subscriptions/{id}/price` (devuelve la suscripción actualizada en vez de `204`, para que el cliente vea el nuevo precio sin un `GET` posterior). |
 | `201 Created` | Recurso creado | `POST` exitoso. Incluye una cabecera `Location` apuntando al nuevo recurso. |
 | `204 No Content` | Éxito, sin cuerpo | `PUT`/`DELETE` exitosos (excepto `PUT .../price`, ver arriba). |
-| `400 Bad Request` | Referencia inválida en la petición | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe. |
+| `400 Bad Request` | Referencia inválida o fallo de validación del dominio | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe, un `name` vacío, un `price` negativo, o un cambio de precio al mismo valor/negativo. |
 | `404 Not Found` | El recurso no existe | `GET`/`PUT`/`DELETE` con un `id` que no está en la base de datos. |
-| `409 Conflict` | Recurso duplicado | `POST`/`PUT` en `Categories`/`Subscriptions` con un nombre ya en uso (sin distinguir mayúsculas/minúsculas) dentro de ese ámbito. |
-| `500 Internal Server Error` | Excepción sin manejar | Hoy también cubre la validación de nombre vacío/precio negativo y el fallo de `RESTRICT` al borrar una categoría con suscripciones — ver la [carencia conocida](#known-gap). |
+| `409 Conflict` | Recurso duplicado, o violación de una restricción de la base de datos | `POST`/`PUT` en `Categories`/`Subscriptions` con un nombre ya en uso (sin distinguir mayúsculas/minúsculas) dentro de ese ámbito, o `DELETE /api/Categories/{id}` sobre una categoría que todavía tiene suscripciones. |
+| `500 Internal Server Error` | Excepción realmente sin manejar | No se espera en uso normal — todas las carencias conocidas anteriores ya están mapeadas a `400`/`409` por los manejadores de excepciones descritos en [Notas generales](#notas-generales). |
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-04</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-13</sub></p>
