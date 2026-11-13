@@ -123,6 +123,30 @@ Content-Type: application/json
 GET {{HostAddress}}/api/Subscriptions/999999
 Accept: application/json
 
+### Change the price of the subscription created above -> expect 200, records a PriceHistory
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/price
+Content-Type: application/json
+
+{
+  "newPrice": 14.99
+}
+
+### Change it again to the SAME price -> expect 500 (known gap, see docs/Api)
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/price
+Content-Type: application/json
+
+{
+  "newPrice": 14.99
+}
+
+### Change the price of a subscription that doesn't exist -> expect 404
+PUT {{HostAddress}}/api/Subscriptions/999999/price
+Content-Type: application/json
+
+{
+  "newPrice": 5
+}
+
 ### Delete the subscription created above
 DELETE {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
 
