@@ -29,13 +29,11 @@ La consola imprime la URL en la que está escuchando, p. ej. `http://localhost:5
 
 ## 📄 Opción A — El fichero `.http`
 
-El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http` con peticiones ya montadas para los endpoints de `Categories` (listar, crear, obtener, actualizar, borrar, un caso de 404 y el caso conocido de 500 con nombre vacío).
+El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluido el endpoint de cambio de precio) y el `PriceHistories` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`/`500`.
 
 1. Ábrelo en **Rider** o **VS Code** (con la extensión *REST Client*).
 2. Pulsa "Send Request" (o la ▶️ que aparece encima de cada bloque) en cada petición separada por `###`, de arriba a abajo.
-3. La petición `createCategory` tiene nombre (`# @name createCategory`), y las de abajo reutilizan automáticamente el `id` que devuelve (`{{createCategory.response.body.$.id}}`) — así que ejecutándolas en orden se encadenan crear → obtener → actualizar → borrar sin que tengas que copiar ningún id a mano.
-
-Este fichero por ahora solo cubre `Categories`. Puedes añadir tus propios bloques para `Subscriptions` y `PriceHistories` siguiendo el mismo patrón — mira la [Referencia de la API](../Api/Api.es.md) para la forma exacta de cada petición/respuesta.
+3. Las peticiones que crean algo tienen nombre (`# @name createCategory`, `# @name createSubscription`, ...), y las de abajo reutilizan automáticamente el `id` que devuelven (p. ej. `{{createCategory.response.body.$.id}}`) — así que ejecutando una sección en orden se encadenan crear → obtener → actualizar → borrar sin que tengas que copiar ningún id a mano.
 
 ---
 
@@ -69,12 +67,14 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 5. `POST /api/Subscriptions` con el mismo nombre pero una categoría **distinta** (crea una segunda categoría primero). Esperado `201` — permitido, porque la unicidad es por categoría.
 6. `GET /api/Subscriptions/{id}` con el id del paso 3. Esperado `200`.
 7. `PUT /api/Subscriptions/{id}` → cambia el nombre/fechas (el precio no es editable aquí a propósito). Esperado `204`.
-8. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con una lista vacía (todavía no existe ningún cambio de precio — esa funcionalidad no está implementada).
-9. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
-10. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
-11. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
-12. `POST /api/Categories` con `"name": ""`. Esperado `500` — es la [carencia conocida](../Api/Api.es.md#known-gap) ya documentada, no un bug que tengas que arreglar.
+8. `PUT /api/Subscriptions/{id}/price` con `{ "newPrice": 14.99 }` → esperado `200` con la suscripción actualizada.
+9. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `500` (carencia conocida: la validación de precio igual/negativo todavía no está mapeada a `400`).
+10. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con **un** registro mostrando el precio viejo/nuevo del paso 8.
+11. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
+12. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
+13. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
+14. `POST /api/Categories` con `"name": ""`. Esperado `500` — es la [carencia conocida](../Api/Api.es.md#known-gap) ya documentada, no un bug que tengas que arreglar.
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-01</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-04</sub></p>
