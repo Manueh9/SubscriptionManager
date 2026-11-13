@@ -45,6 +45,17 @@ public class SubscriptionsEndpointsTests(WebApiFactory factory) : IClassFixture<
     }
 
     [Fact]
+    public async Task Create_ReturnsBadRequest_WhenBillingCycleIsNotDefined()
+    {
+        var categoryId = await CreateCategoryAsync();
+
+        var response = await _client.PostAsJsonAsync("/api/Subscriptions", new SubscriptionCreateRequest(
+            $"Spotify-{Guid.NewGuid()}", "Music", 9.99m, (BillingCycle)999, DateTime.UtcNow, categoryId));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ChangePrice_ReturnsOk_AndUpdatesPrice()
     {
         var categoryId = await CreateCategoryAsync();
@@ -107,5 +118,16 @@ public class SubscriptionsEndpointsTests(WebApiFactory factory) : IClassFixture<
         var response = await _client.PutAsJsonAsync("/api/Subscriptions/999999/status", new ChangeStatusRequest(SubscriptionStatus.Paused));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ReturnsBadRequest_WhenNewStatusIsNotDefined()
+    {
+        var categoryId = await CreateCategoryAsync();
+        var subscription = await CreateSubscriptionAsync(categoryId);
+
+        var response = await _client.PutAsJsonAsync($"/api/Subscriptions/{subscription.Id}/status", new ChangeStatusRequest((SubscriptionStatus)999));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

@@ -102,6 +102,19 @@ Content-Type: application/json
   "categoryId": 999999
 }
 
+### Create a subscription with a billingCycle that isn't a defined enum value -> expect 400
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "Spotify",
+  "description": "Music",
+  "price": 9.99,
+  "billingCycle": 999,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": {{createCategoryForSubscription.response.body.$.id}}
+}
+
 ### Get the subscription created above
 GET {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
 Accept: application/json
@@ -121,6 +134,14 @@ Content-Type: application/json
 
 ### Get a subscription that doesn't exist -> expect 404
 GET {{HostAddress}}/api/Subscriptions/999999
+Accept: application/json
+
+### Get upcoming renewals in the next 30 days (default) -> expect 200, includes the subscription above
+GET {{HostAddress}}/api/Subscriptions/upcoming
+Accept: application/json
+
+### Get upcoming renewals in the next 1 day -> expect 200, excludes the subscription above (its next renewal is further out)
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=1
 Accept: application/json
 
 ### Change the price of the subscription created above -> expect 200, records a PriceHistory
@@ -173,6 +194,14 @@ Content-Type: application/json
 
 {
   "newStatus": 1
+}
+
+### Change the status of the subscription above to a newStatus that isn't a defined enum value -> expect 400
+PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 999
 }
 
 ### Get the expenses summary again, now that the subscription above is Paused -> expect 200 (excludes it)
