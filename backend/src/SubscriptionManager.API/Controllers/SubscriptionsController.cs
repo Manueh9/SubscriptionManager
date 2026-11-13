@@ -190,6 +190,33 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
 
     #endregion
 
+    #region Change Status
+
+    /// <summary>
+    /// Changes a subscription's status (Active/Paused/Cancelled).
+    /// </summary>
+    /// <param name="id">Subscription id.</param>
+    /// <param name="request">The new status.</param>
+    /// <returns>200 with the updated subscription, 404 if the subscription doesn't exist, or 400 if the new status equals the current one.</returns>
+    [HttpPut("{id:int}/status")]
+    public async Task<ActionResult<SubscriptionResponse>> ChangeStatus(int id, ChangeStatusRequest request)
+    {
+        var subscription = await dbContext.Subscriptions.FindAsync(id);
+
+        if (subscription is null)
+        {
+            return NotFound();
+        }
+
+        subscription.ChangeStatus(request.NewStatus);
+
+        await dbContext.SaveChangesAsync();
+
+        return Ok(ToResponse(subscription));
+    }
+
+    #endregion
+
     #region Delete
 
     /// <summary>

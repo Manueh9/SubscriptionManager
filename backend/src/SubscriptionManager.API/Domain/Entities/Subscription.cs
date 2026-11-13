@@ -48,6 +48,14 @@ public class Subscription
         return priceHistory;
     }
 
+    public void ChangeStatus(SubscriptionStatus newStatus)
+    {
+        ArgumentOutOfRangeException.ThrowIfEqual(newStatus, Status);
+
+        Status = newStatus;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdateDetails(string name, string description, BillingCycle billingCycle, DateTime startDate, DateTime? endDate, Category category)
     {
         EnsureIsValid(name, Price);
