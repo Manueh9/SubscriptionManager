@@ -1,5 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using SubscriptionManager.API.Domain.Enum;
 
 namespace SubscriptionManager.API.DTO;
 
-public record ChangeStatusRequest(SubscriptionStatus NewStatus);
+public record ChangeStatusRequest([EnumDataType(typeof(SubscriptionStatus))] SubscriptionStatus NewStatus);

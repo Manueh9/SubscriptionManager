@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SubscriptionManager.API.DTO;
 using SubscriptionManager.API.Domain.Entities;
+using SubscriptionManager.API.Domain.Enum;
 using SubscriptionManager.API.Infrastructure.Persistence;
 
 namespace SubscriptionManager.API.Controllers;
@@ -60,6 +61,42 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
         }
 
         return Ok(ToResponse(subscription));
+    }
+
+    #endregion
+
+    #region Upcoming Renewals
+
+    /// <summary>
+    /// Gets active subscriptions whose next renewal falls within the given window, ordered
+    /// by date. Paused/cancelled subscriptions, and ones that have already ended, are
+    /// excluded.
+    /// </summary>
+    /// <param name="withinDays">How many days ahead to look. Defaults to 30.</param>
+    /// <returns>200 with the list of upcoming renewals.</returns>
+    [HttpGet("upcoming")]
+    public async Task<ActionResult<IEnumerable<UpcomingRenewalResponse>>> GetUpcoming([FromQuery] int withinDays = 30)
+    {
+        var today = DateTime.UtcNow.Date;
+        var horizon = today.AddDays(withinDays);
+
+        var subscriptions = await dbContext.Subscriptions
+            .Where(subscription => subscription.Status == SubscriptionStatus.Active)
+            .ToListAsync();
+
+        var upcoming = subscriptions
+            .Select(subscription => (subscription, nextRenewalDate: subscription.GetNextRenewalDate(today)))
+            .Where(x => x.nextRenewalDate is not null && x.nextRenewalDate <= horizon)
+            .OrderBy(x => x.nextRenewalDate)
+            .Select(x => new UpcomingRenewalResponse(
+                x.subscription.Id,
+                x.subscription.Name,
+                x.subscription.Price,
+                x.subscription.BillingCycle,
+                x.nextRenewalDate!.Value,
+                x.subscription.CategoryId));
+
+        return Ok(upcoming);
     }
 
     #endregion

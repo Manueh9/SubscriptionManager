@@ -56,6 +56,40 @@ public class Subscription
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Computes the date of the next renewal on or after <paramref name="asOf"/> (compared
+    /// by calendar date, time-of-day ignored). Returns null if the subscription isn't
+    /// Active, or if that date would fall after <see cref="EndDate"/>.
+    /// </summary>
+    public DateTime? GetNextRenewalDate(DateTime asOf)
+    {
+        if (Status != SubscriptionStatus.Active)
+        {
+            return null;
+        }
+
+        var today = asOf.Date;
+        var next = StartDate.Date;
+
+        while (next < today)
+        {
+            next = BillingCycle switch
+            {
+                BillingCycle.Day => next.AddDays(1),
+                BillingCycle.Monthly => next.AddMonths(1),
+                BillingCycle.Yearly => next.AddYears(1),
+                _ => throw new ArgumentOutOfRangeException(nameof(BillingCycle))
+            };
+        }
+
+        if (EndDate is not null && next > EndDate.Value.Date)
+        {
+            return null;
+        }
+
+        return next;
+    }
+
     public void UpdateDetails(string name, string description, BillingCycle billingCycle, DateTime startDate, DateTime? endDate, Category category)
     {
         EnsureIsValid(name, Price);
