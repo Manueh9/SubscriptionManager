@@ -22,10 +22,7 @@ public class Category
 
     private static void EnsureIsValid(string name)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Category name cannot be empty.", nameof(name));
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
     }
 
     private Category()

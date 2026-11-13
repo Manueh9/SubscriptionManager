@@ -24,15 +24,9 @@ public class PriceHistory
 
     private static void EnsureIsValid(decimal oldPrice, decimal newPrice)
     {
-        if (oldPrice < 0 || newPrice < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(newPrice), "Prices cannot be negative.");
-        }
-
-        if (oldPrice == newPrice)
-        {
-            throw new ArgumentException("New price must be different from the old price.", nameof(newPrice));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegative(oldPrice);
+        ArgumentOutOfRangeException.ThrowIfNegative(newPrice);
+        ArgumentOutOfRangeException.ThrowIfEqual(newPrice, oldPrice);
     }
 
     private PriceHistory()

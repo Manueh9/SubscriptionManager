@@ -64,15 +64,8 @@ public class Subscription
 
     private static void EnsureIsValid(string name, decimal price)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Subscription name cannot be empty.", nameof(name));
-        }
-
-        if (price < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(price), "Price cannot be negative.");
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentOutOfRangeException.ThrowIfNegative(price);
     }
 
     private Subscription()
