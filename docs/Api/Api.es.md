@@ -12,7 +12,8 @@
 2. [Categories](#-categories)
 3. [Subscriptions](#-subscriptions)
 4. [Price Histories](#-price-histories)
-5. [Referencia de códigos de estado](#-referencia-de-códigos-de-estado)
+5. [Expenses](#-expenses)
+6. [Referencia de códigos de estado](#-referencia-de-códigos-de-estado)
 
 ---
 
@@ -326,6 +327,27 @@ Devuelve un registro de historial de precios concreto por su id.
 **Respuesta `200 OK`** — misma forma que arriba (un único objeto).
 
 **Respuesta `404 Not Found`** — no existe ningún registro con ese `id`.
+
+---
+
+## 📁 Expenses
+
+**Solo lectura, datos agregados.** No es un recurso propio — informa sobre `Subscriptions`.
+
+### `GET /api/Expenses/summary`
+
+Devuelve el coste mensual y anual total de todas las suscripciones **activas** (`Active`). Las suscripciones `Paused` y `Cancelled` no cuentan.
+
+El coste de cada suscripción se convierte a su equivalente anual antes de sumar — `Day` × 365, `Monthly` × 12, `Yearly` tal cual — y el total mensual es esa suma dividida entre 12. Ambos totales se redondean a 2 decimales solo al final, para que el redondeo de una suscripción no desvíe la suma.
+
+**Respuesta `200 OK`**
+```json
+{
+  "monthlyTotal": 22.98,
+  "yearlyTotal": 275.76,
+  "activeSubscriptionCount": 2
+}
+```
 
 ---
 

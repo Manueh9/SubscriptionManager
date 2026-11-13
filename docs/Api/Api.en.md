@@ -12,7 +12,8 @@
 2. [Categories](#-categories)
 3. [Subscriptions](#-subscriptions)
 4. [Price Histories](#-price-histories)
-5. [Status Codes Reference](#-status-codes-reference)
+5. [Expenses](#-expenses)
+6. [Status Codes Reference](#-status-codes-reference)
 
 ---
 
@@ -326,6 +327,27 @@ Returns a single price history record by id.
 **Response `200 OK`** — same shape as above (a single object).
 
 **Response `404 Not Found`** — no record exists with that `id`.
+
+---
+
+## 📁 Expenses
+
+**Read-only, aggregated data.** Not a resource of its own — it reports on `Subscriptions`.
+
+### `GET /api/Expenses/summary`
+
+Returns the total monthly and yearly cost of all **active** subscriptions. `Paused` and `Cancelled` subscriptions don't count towards it.
+
+Each subscription's cost is converted to a yearly equivalent before summing — `Day` × 365, `Monthly` × 12, `Yearly` as-is — and the monthly total is that sum divided by 12. Both totals are rounded to 2 decimals only at the end, so rounding on one subscription doesn't skew the sum.
+
+**Response `200 OK`**
+```json
+{
+  "monthlyTotal": 22.98,
+  "yearlyTotal": 275.76,
+  "activeSubscriptionCount": 2
+}
+```
 
 ---
 
