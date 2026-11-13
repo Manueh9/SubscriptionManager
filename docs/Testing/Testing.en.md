@@ -30,7 +30,7 @@ The console prints the URL it's listening on, e.g. `http://localhost:5166`. Keep
 
 ## 📄 Option A — The `.http` File
 
-The project already has `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organized in sections, with ready-made requests for `Categories`, `Subscriptions` (including the price-change endpoint) and the read-only `PriceHistories` — covering the happy path plus the documented `404`/`400`/`409` cases.
+The project already has `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organized in sections, with ready-made requests for `Categories`, `Subscriptions` (including the price-change and status-change endpoints) and the read-only `PriceHistories` — covering the happy path plus the documented `404`/`400`/`409` cases.
 
 1. Open it in **Rider** or **VS Code** (with the *REST Client* extension).
 2. Click "Send Request" (or the ▶️ that appears above each block) on each `###`-separated request, top to bottom.
@@ -65,7 +65,7 @@ Content-Type: application/json
 dotnet test
 ```
 
-It currently covers the happy paths for `Categories`, `Subscriptions` and `PriceHistories`, plus the `400`/`404`/`409` edge cases documented in the [API Reference](../Api/Api.en.md) — including regression checks for both global exception handlers (`ArgumentExceptionHandler` for the empty-name/negative-price/same-price guard clauses, and `DbUpdateExceptionHandler` for deleting a category that still has subscriptions). See [General Notes](../Api/Api.en.md#general-notes) in the API Reference for details.
+It currently covers the happy paths for `Categories`, `Subscriptions` and `PriceHistories`, plus the `400`/`404`/`409` edge cases documented in the [API Reference](../Api/Api.en.md) — including regression checks for both global exception handlers (`ArgumentExceptionHandler` for the empty-name/negative-price/same-price/same-status guard clauses, and `DbUpdateExceptionHandler` for deleting a category that still has subscriptions). See [General Notes](../Api/Api.en.md#general-notes) in the API Reference for details.
 
 ---
 
@@ -83,11 +83,13 @@ This mirrors the flow already verified while building the API — a good order t
 8. `PUT /api/Subscriptions/{id}/price` with `{ "newPrice": 14.99 }` → expect `200` with the updated subscription.
 9. `PUT /api/Subscriptions/{id}/price` again with the **same** price → expect `400`.
 10. `GET /api/PriceHistories?subscriptionId={id}` → expect `200` with **one** record showing the old/new price from step 8.
-11. `DELETE /api/Categories/{id}` using the id from step 1, while the subscription from step 3 still exists → expect `409`.
-12. `DELETE /api/Subscriptions/{id}`. Expect `204`.
-13. `DELETE /api/Categories/{id}` (the one from step 1, now with no subscriptions left). Expect `204`.
-14. `GET /api/Categories/999999` (an id that doesn't exist). Expect `404`.
-15. `POST /api/Categories` with `"name": ""`. Expect `400`.
+11. `PUT /api/Subscriptions/{id}/status` with `{ "newStatus": 1 }` (Paused) → expect `200` with the updated subscription.
+12. `PUT /api/Subscriptions/{id}/status` again with the **same** status → expect `400`.
+13. `DELETE /api/Categories/{id}` using the id from step 1, while the subscription from step 3 still exists → expect `409`.
+14. `DELETE /api/Subscriptions/{id}`. Expect `204`.
+15. `DELETE /api/Categories/{id}` (the one from step 1, now with no subscriptions left). Expect `204`.
+16. `GET /api/Categories/999999` (an id that doesn't exist). Expect `404`.
+17. `POST /api/Categories` with `"name": ""`. Expect `400`.
 
 ---
 

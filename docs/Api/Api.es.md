@@ -21,7 +21,7 @@
 - URL base (desarrollo local): `http://localhost:<puerto>/api` (el puerto sale de `Properties/launchSettings.json`).
 - Todas las peticiones/respuestas usan `Content-Type: application/json`.
 - Actualmente **no hay autenticación** — la app es local-first y mono-usuario (ver [Alcance del Proyecto](../ProjectScope/ProjectScope.es.md)).
-- ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce las violaciones de restricciones de la base de datos (`DbUpdateException` — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
+- ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio o el estado al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce las violaciones de restricciones de la base de datos (`DbUpdateException` — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
 - ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos (capturada por `DbUpdateExceptionHandler` si dos peticiones llegan a la vez y superan esa comprobación) actúa como red de seguridad — en cualquiera de los dos casos se devuelve `409`, nunca un `500` sin control.
 
 ---
@@ -202,7 +202,7 @@ Cabecera `Location: /api/Subscriptions/{id}`
 
 ### `PUT /api/Subscriptions/{id}`
 
-Actualiza los datos de una suscripción. **El `price` no es editable aquí a propósito** — solo debería cambiar a través de `PUT /api/Subscriptions/{id}/price` (más abajo), para que cada cambio quede registrado en [Price Histories](#-price-histories).
+Actualiza los datos de una suscripción. **El `price` y el `status` no son editables aquí a propósito** — solo deberían cambiar a través de `PUT /api/Subscriptions/{id}/price` y `PUT /api/Subscriptions/{id}/status` (más abajo); los cambios de precio además quedan registrados en [Price Histories](#-price-histories).
 
 **Cuerpo de la petición**
 ```json
@@ -270,6 +270,26 @@ Cambia el precio de una suscripción y registra el cambio como una nueva entrada
 
 ---
 
+### `PUT /api/Subscriptions/{id}/status`
+
+Cambia el estado de una suscripción (`Active`/`Paused`/`Cancelled`). No hay restricciones sobre qué transiciones están permitidas (p. ej. reactivar una suscripción cancelada es válido) — la única regla es que el nuevo estado debe ser distinto del actual.
+
+**Cuerpo de la petición**
+```json
+{
+  "newStatus": 1
+}
+```
+> `newStatus` es el valor entero de `SubscriptionStatus` — ver [Base de Datos: Referencia de Enums](../Database/Database.es.md#-referencia-de-enums).
+
+**Respuesta `200 OK`** — la suscripción con su `status` y `updatedAt` actualizados.
+
+**Respuesta `404 Not Found`** — no existe ninguna suscripción con ese `id`.
+
+**Respuesta `400 Bad Request`** — si `newStatus` es igual al estado actual.
+
+---
+
 ## 📁 Price Histories
 
 **Solo lectura desde el punto de vista de la API.** Los registros se crean automáticamente con `PUT /api/Subscriptions/{id}/price` de arriba — no hay `POST`/`PUT`/`DELETE` directo sobre este recurso.
@@ -313,10 +333,10 @@ Devuelve un registro de historial de precios concreto por su id.
 
 | Código | Significado | Cuándo se usa |
 |---|---|---|
-| `200 OK` | Éxito, con cuerpo de respuesta | Peticiones `GET` que encuentran datos, y `PUT /api/Subscriptions/{id}/price` (devuelve la suscripción actualizada en vez de `204`, para que el cliente vea el nuevo precio sin un `GET` posterior). |
+| `200 OK` | Éxito, con cuerpo de respuesta | Peticiones `GET` que encuentran datos, y `PUT /api/Subscriptions/{id}/price`/`/status` (devuelven la suscripción actualizada en vez de `204`, para que el cliente vea el nuevo valor sin un `GET` posterior). |
 | `201 Created` | Recurso creado | `POST` exitoso. Incluye una cabecera `Location` apuntando al nuevo recurso. |
-| `204 No Content` | Éxito, sin cuerpo | `PUT`/`DELETE` exitosos (excepto `PUT .../price`, ver arriba). |
-| `400 Bad Request` | Referencia inválida o fallo de validación del dominio | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe, un `name` vacío, un `price` negativo, o un cambio de precio al mismo valor/negativo. |
+| `204 No Content` | Éxito, sin cuerpo | `PUT`/`DELETE` exitosos (excepto `PUT .../price` y `PUT .../status`, ver arriba). |
+| `400 Bad Request` | Referencia inválida o fallo de validación del dominio | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe, un `name` vacío, un `price` negativo, un cambio de precio al mismo valor/negativo, o un cambio de estado al mismo valor. |
 | `404 Not Found` | El recurso no existe | `GET`/`PUT`/`DELETE` con un `id` que no está en la base de datos. |
 | `409 Conflict` | Recurso duplicado, o violación de una restricción de la base de datos | `POST`/`PUT` en `Categories`/`Subscriptions` con un nombre ya en uso (sin distinguir mayúsculas/minúsculas) dentro de ese ámbito, o `DELETE /api/Categories/{id}` sobre una categoría que todavía tiene suscripciones. |
 | `500 Internal Server Error` | Excepción realmente sin manejar | No se espera en uso normal — todas las carencias conocidas anteriores ya están mapeadas a `400`/`409` por los manejadores de excepciones descritos en [Notas generales](#notas-generales). |

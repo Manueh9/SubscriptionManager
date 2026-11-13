@@ -30,7 +30,7 @@ La consola imprime la URL en la que está escuchando, p. ej. `http://localhost:5
 
 ## 📄 Opción A — El fichero `.http`
 
-El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluido el endpoint de cambio de precio) y el `PriceHistories` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
+El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluidos los endpoints de cambio de precio y de estado) y el `PriceHistories` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
 
 1. Ábrelo en **Rider** o **VS Code** (con la extensión *REST Client*).
 2. Pulsa "Send Request" (o la ▶️ que aparece encima de cada bloque) en cada petición separada por `###`, de arriba a abajo.
@@ -65,7 +65,7 @@ Content-Type: application/json
 dotnet test
 ```
 
-Hoy cubre el camino feliz de `Categories`, `Subscriptions` y `PriceHistories`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones). Ver [Notas generales](../Api/Api.es.md#notas-generales) en la Referencia de la API para más detalle.
+Hoy cubre el camino feliz de `Categories`, `Subscriptions` y `PriceHistories`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio/mismo estado, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones). Ver [Notas generales](../Api/Api.es.md#notas-generales) en la Referencia de la API para más detalle.
 
 ---
 
@@ -83,11 +83,13 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 8. `PUT /api/Subscriptions/{id}/price` con `{ "newPrice": 14.99 }` → esperado `200` con la suscripción actualizada.
 9. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `400`.
 10. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con **un** registro mostrando el precio viejo/nuevo del paso 8.
-11. `DELETE /api/Categories/{id}` usando el id del paso 1, mientras la suscripción del paso 3 todavía existe → esperado `409`.
-12. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
-13. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
-14. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
-15. `POST /api/Categories` con `"name": ""`. Esperado `400`.
+11. `PUT /api/Subscriptions/{id}/status` con `{ "newStatus": 1 }` (Paused) → esperado `200` con la suscripción actualizada.
+12. `PUT /api/Subscriptions/{id}/status` otra vez con el **mismo** estado → esperado `400`.
+13. `DELETE /api/Categories/{id}` usando el id del paso 1, mientras la suscripción del paso 3 todavía existe → esperado `409`.
+14. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
+15. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
+16. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
+17. `POST /api/Categories` con `"name": ""`. Esperado `400`.
 
 ---
 

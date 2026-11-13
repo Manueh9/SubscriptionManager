@@ -21,7 +21,7 @@
 - Base URL (local dev): `http://localhost:<port>/api` (port comes from `Properties/launchSettings.json`).
 - All requests/responses use `Content-Type: application/json`.
 - There is currently **no authentication** — the app is local-first and single-tenant (see [Project Scope](../ProjectScope/ProjectScope.en.md)).
-- ✅ Two global exception handlers (registered via `app.UseExceptionHandler()`) turn expected failures into proper status codes instead of a raw `500`: `ArgumentExceptionHandler` maps domain guard-clause failures (`ArgumentException`/`ArgumentOutOfRangeException` — an empty `name`, a negative `price`, changing a price to the same value) to `400 Bad Request`; `DbUpdateExceptionHandler` maps database constraint violations (`DbUpdateException` — e.g. deleting a category that still has subscriptions) to `409 Conflict`. Both return a `ProblemDetails` body.
+- ✅ Two global exception handlers (registered via `app.UseExceptionHandler()`) turn expected failures into proper status codes instead of a raw `500`: `ArgumentExceptionHandler` maps domain guard-clause failures (`ArgumentException`/`ArgumentOutOfRangeException` — an empty `name`, a negative `price`, changing a price or status to the same value) to `400 Bad Request`; `DbUpdateExceptionHandler` maps database constraint violations (`DbUpdateException` — e.g. deleting a category that still has subscriptions) to `409 Conflict`. Both return a `ProblemDetails` body.
 - ✅ Duplicate-name conflicts (`409`) are already handled safely, including under concurrent requests: the controller pre-checks for a duplicate, and the database's unique constraint (caught by `DbUpdateExceptionHandler` if two requests race past that check) is the safety net — either path returns `409`, never a raw `500`.
 
 ---
@@ -202,7 +202,7 @@ Header `Location: /api/Subscriptions/{id}`
 
 ### `PUT /api/Subscriptions/{id}`
 
-Updates a subscription's details. **`price` is intentionally not editable here** — it's meant to change only through `PUT /api/Subscriptions/{id}/price` below, so every change gets recorded in [Price Histories](#-price-histories).
+Updates a subscription's details. **`price` and `status` are intentionally not editable here** — they're meant to change only through `PUT /api/Subscriptions/{id}/price` and `PUT /api/Subscriptions/{id}/status` below (price changes are also recorded in [Price Histories](#-price-histories)).
 
 **Request body**
 ```json
@@ -270,6 +270,26 @@ Changes a subscription's price and records the change as a new entry in [Price H
 
 ---
 
+### `PUT /api/Subscriptions/{id}/status`
+
+Changes a subscription's status (`Active`/`Paused`/`Cancelled`). There are no restrictions on which transitions are allowed (e.g. reactivating a cancelled subscription is fine) — the only rule is that the new status must be different from the current one.
+
+**Request body**
+```json
+{
+  "newStatus": 1
+}
+```
+> `newStatus` is the integer value of `SubscriptionStatus` — see [Database: Enums Reference](../Database/Database.en.md#-enums-reference).
+
+**Response `200 OK`** — the subscription with its updated `status` and `updatedAt`.
+
+**Response `404 Not Found`** — no subscription exists with that `id`.
+
+**Response `400 Bad Request`** — if `newStatus` equals the current status.
+
+---
+
 ## 📁 Price Histories
 
 **Read-only from the API's point of view.** Records are created automatically by `PUT /api/Subscriptions/{id}/price` above — there's no direct `POST`/`PUT`/`DELETE` on this resource.
@@ -313,10 +333,10 @@ Returns a single price history record by id.
 
 | Code | Meaning | Used when |
 |---|---|---|
-| `200 OK` | Success, body returned | `GET` requests that find data, and `PUT /api/Subscriptions/{id}/price` (returns the updated subscription instead of `204`, so the client sees the new price without a follow-up `GET`). |
+| `200 OK` | Success, body returned | `GET` requests that find data, and `PUT /api/Subscriptions/{id}/price`/`/status` (return the updated subscription instead of `204`, so the client sees the new value without a follow-up `GET`). |
 | `201 Created` | Resource created | Successful `POST`. Includes a `Location` header pointing to the new resource. |
-| `204 No Content` | Success, no body | Successful `PUT`/`DELETE` (except `PUT .../price`, see above). |
-| `400 Bad Request` | Invalid reference or domain guard-clause failure | `POST`/`PUT` on `Subscriptions` with a `categoryId` that doesn't exist, an empty `name`, a negative `price`, or a price change to the same/negative value. |
+| `204 No Content` | Success, no body | Successful `PUT`/`DELETE` (except `PUT .../price` and `PUT .../status`, see above). |
+| `400 Bad Request` | Invalid reference or domain guard-clause failure | `POST`/`PUT` on `Subscriptions` with a `categoryId` that doesn't exist, an empty `name`, a negative `price`, a price change to the same/negative value, or a status change to the same value. |
 | `404 Not Found` | Resource doesn't exist | `GET`/`PUT`/`DELETE` with an `id` that isn't in the database. |
 | `409 Conflict` | Duplicate resource, or a database constraint violation | `POST`/`PUT` on `Categories`/`Subscriptions` with a name already in use (case-insensitive) within that scope, or `DELETE /api/Categories/{id}` on a category that still has subscriptions. |
 | `500 Internal Server Error` | Genuinely unhandled exception | Not expected during normal use — every previously-known gap is now mapped to `400`/`409` by the exception handlers described in [General Notes](#general-notes). |
