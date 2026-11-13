@@ -30,7 +30,7 @@ La consola imprime la URL en la que está escuchando, p. ej. `http://localhost:5
 
 ## 📄 Opción A — El fichero `.http`
 
-El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluidos los endpoints de cambio de precio y de estado), el `PriceHistories` de solo lectura, y el resumen de `Expenses` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
+El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluidos los endpoints de cambio de precio, de estado y de próximas renovaciones), el `PriceHistories` de solo lectura, y el resumen de `Expenses` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
 
 1. Ábrelo en **Rider** o **VS Code** (con la extensión *REST Client*).
 2. Pulsa "Send Request" (o la ▶️ que aparece encima de cada bloque) en cada petición separada por `###`, de arriba a abajo.
@@ -65,7 +65,9 @@ Content-Type: application/json
 dotnet test
 ```
 
-Hoy cubre el camino feliz de `Categories`, `Subscriptions`, `PriceHistories` y `Expenses`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio/mismo estado, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones), además de la conversión de coste diario/mensual/anual que usa el resumen de gastos.
+Hoy cubre el camino feliz de `Categories`, `Subscriptions`, `PriceHistories` y `Expenses`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio/mismo estado, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones), la conversión de coste diario/mensual/anual que usa el resumen de gastos, el cálculo de fecha de renovación (límites de la ventana, suscripciones pausadas, suscripciones terminadas) que usa `/api/Subscriptions/upcoming`, y la validación `[EnumDataType]` que rechaza un `billingCycle`/`newStatus` no definido.
+
+`ExpensesEndpointsTests` y `UpcomingRenewalsEndpointsTests` le dan a cada test su propia `WebApiFactory` (y por tanto su propia base de datos vacía) en vez de compartir una vía `IClassFixture`, porque ambos endpoints agregan todas las suscripciones de la base de datos y de lo contrario verían datos dejados por tests hermanos.
 
 ---
 
@@ -78,20 +80,24 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 3. `POST /api/Subscriptions` → crea "Netflix" usando el id de categoría del paso 1. Esperado `201`.
 4. `POST /api/Subscriptions` otra vez con el mismo nombre **y** la misma categoría. Esperado `409`.
 5. `POST /api/Subscriptions` con el mismo nombre pero una categoría **distinta** (crea una segunda categoría primero). Esperado `201` — permitido, porque la unicidad es por categoría.
-6. `GET /api/Subscriptions/{id}` con el id del paso 3. Esperado `200`.
-7. `PUT /api/Subscriptions/{id}` → cambia el nombre/fechas (el precio no es editable aquí a propósito). Esperado `204`.
-8. `PUT /api/Subscriptions/{id}/price` con `{ "newPrice": 14.99 }` → esperado `200` con la suscripción actualizada.
-9. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `400`.
-10. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con **un** registro mostrando el precio viejo/nuevo del paso 8.
-11. `GET /api/Expenses/summary` → esperado `200`; el total debería incluir los `14.99`/mes de esta suscripción.
-12. `PUT /api/Subscriptions/{id}/status` con `{ "newStatus": 1 }` (Paused) → esperado `200` con la suscripción actualizada.
-13. `PUT /api/Subscriptions/{id}/status` otra vez con el **mismo** estado → esperado `400`.
-14. `GET /api/Expenses/summary` otra vez → esperado `200`; el total ya no debería incluir esta suscripción, porque ahora está `Paused`.
-15. `DELETE /api/Categories/{id}` usando el id del paso 1, mientras la suscripción del paso 3 todavía existe → esperado `409`.
-16. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
-17. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
-18. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
-19. `POST /api/Categories` con `"name": ""`. Esperado `400`.
+6. `POST /api/Subscriptions` con `"billingCycle": 999` (no es un valor definido). Esperado `400`.
+7. `GET /api/Subscriptions/{id}` con el id del paso 3. Esperado `200`.
+8. `GET /api/Subscriptions/upcoming` → esperado `200`; esta suscripción debería aparecer (está `Active`, y su `startDate` debería estar dentro de la ventana por defecto de 30 días, salvo que hayas puesto una más lejana).
+9. `PUT /api/Subscriptions/{id}` → cambia el nombre/fechas (el precio no es editable aquí a propósito). Esperado `204`.
+10. `PUT /api/Subscriptions/{id}/price` con `{ "newPrice": 14.99 }` → esperado `200` con la suscripción actualizada.
+11. `PUT /api/Subscriptions/{id}/price` otra vez con el **mismo** precio → esperado `400`.
+12. `GET /api/PriceHistories?subscriptionId={id}` → esperado `200` con **un** registro mostrando el precio viejo/nuevo del paso 10.
+13. `GET /api/Expenses/summary` → esperado `200`; el total debería incluir los `14.99`/mes de esta suscripción.
+14. `PUT /api/Subscriptions/{id}/status` con `{ "newStatus": 1 }` (Paused) → esperado `200` con la suscripción actualizada.
+15. `PUT /api/Subscriptions/{id}/status` otra vez con el **mismo** estado → esperado `400`.
+16. `PUT /api/Subscriptions/{id}/status` con `{ "newStatus": 999 }` (no es un valor definido) → esperado `400`.
+17. `GET /api/Expenses/summary` otra vez → esperado `200`; el total ya no debería incluir esta suscripción, porque ahora está `Paused`.
+18. `GET /api/Subscriptions/upcoming` otra vez → esperado `200`; esta suscripción tampoco debería aparecer ya, por la misma razón.
+19. `DELETE /api/Categories/{id}` usando el id del paso 1, mientras la suscripción del paso 3 todavía existe → esperado `409`.
+20. `DELETE /api/Subscriptions/{id}`. Esperado `204`.
+21. `DELETE /api/Categories/{id}` (la del paso 1, ya sin suscripciones). Esperado `204`.
+22. `GET /api/Categories/999999` (un id que no existe). Esperado `404`.
+23. `POST /api/Categories` con `"name": ""`. Esperado `400`.
 
 ---
 

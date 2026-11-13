@@ -23,6 +23,7 @@
 - Todas las peticiones/respuestas usan `Content-Type: application/json`.
 - Actualmente **no hay autenticación** — la app es local-first y mono-usuario (ver [Alcance del Proyecto](../ProjectScope/ProjectScope.es.md)).
 - ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio o el estado al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce las violaciones de restricciones de la base de datos (`DbUpdateException` — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
+- ✅ `billingCycle` y `newStatus` se validan contra los valores definidos de su enum (vía `[EnumDataType]`). Un entero no definido (p. ej. `"billingCycle": 999`) se rechaza con `400 Bad Request` por la validación de modelo integrada de `[ApiController]` de ASP.NET Core — nunca llega a la capa de dominio ni se guarda. Esta respuesta tiene una forma algo distinta a la de arriba: `{"title": "One or more validation errors occurred.", "status": 400, "errors": {"BillingCycle": ["The field BillingCycle is invalid."]}}` (un `ValidationProblemDetails`, no el `ProblemDetails` simple que devuelven los manejadores de excepciones).
 - ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos (capturada por `DbUpdateExceptionHandler` si dos peticiones llegan a la vez y superan esa comprobación) actúa como red de seguridad — en cualquiera de los dos casos se devuelve `409`, nunca un `500` sin control.
 
 ---
@@ -161,6 +162,34 @@ Devuelve una suscripción concreta por su id.
 
 ---
 
+### `GET /api/Subscriptions/upcoming`
+
+Devuelve las suscripciones **activas** (`Active`) cuya próxima renovación cae dentro de una ventana de días desde hoy, ordenadas por esa fecha (la más próxima primero). Se excluyen las `Paused`/`Cancelled`, así como las que ya han terminado (`EndDate` en el pasado).
+
+La fecha de la próxima renovación se calcula a partir de `StartDate`, avanzando de un incremento de `billingCycle` en uno (`Day` → +1 día, `Monthly` → +1 mes, `Yearly` → +1 año) hasta llegar a hoy o después — comparando por fecha de calendario, no por hora exacta. Un `StartDate` en el futuro es en sí mismo la primera renovación.
+
+**Parámetros de consulta**
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `withinDays` | `int` (opcional, por defecto `30`) | Cuántos días hacia adelante mirar. |
+
+**Respuesta `200 OK`**
+```json
+[
+  {
+    "subscriptionId": 1,
+    "name": "Netflix",
+    "price": 12.99,
+    "billingCycle": 1,
+    "nextRenewalDate": "2026-12-01T00:00:00Z",
+    "categoryId": 1
+  }
+]
+```
+
+---
+
 ### `POST /api/Subscriptions`
 
 Crea una suscripción.
@@ -195,7 +224,7 @@ Cabecera `Location: /api/Subscriptions/{id}`
 }
 ```
 
-**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, o `name` está vacío/en blanco, o `price` es negativo.
+**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, `name` está vacío/en blanco, `price` es negativo, o `billingCycle` no es un valor definido.
 
 **Respuesta `409 Conflict`** — ya existe una suscripción con ese `name` en esa categoría (sin distinguir mayúsculas/minúsculas).
 
@@ -221,7 +250,7 @@ Actualiza los datos de una suscripción. **El `price` y el `status` no son edita
 
 **Respuesta `404 Not Found`** — no existe ninguna suscripción con ese `id`.
 
-**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, o `name` está vacío/en blanco.
+**Respuesta `400 Bad Request`** — el `categoryId` no corresponde a ninguna categoría existente, `name` está vacío/en blanco, o `billingCycle` no es un valor definido.
 
 **Respuesta `409 Conflict`** — ya existe otra suscripción con ese `name` en esa categoría.
 
@@ -287,7 +316,7 @@ Cambia el estado de una suscripción (`Active`/`Paused`/`Cancelled`). No hay res
 
 **Respuesta `404 Not Found`** — no existe ninguna suscripción con ese `id`.
 
-**Respuesta `400 Bad Request`** — si `newStatus` es igual al estado actual.
+**Respuesta `400 Bad Request`** — si `newStatus` es igual al estado actual, o no es un valor definido.
 
 ---
 
@@ -358,7 +387,7 @@ El coste de cada suscripción se convierte a su equivalente anual antes de sumar
 | `200 OK` | Éxito, con cuerpo de respuesta | Peticiones `GET` que encuentran datos, y `PUT /api/Subscriptions/{id}/price`/`/status` (devuelven la suscripción actualizada en vez de `204`, para que el cliente vea el nuevo valor sin un `GET` posterior). |
 | `201 Created` | Recurso creado | `POST` exitoso. Incluye una cabecera `Location` apuntando al nuevo recurso. |
 | `204 No Content` | Éxito, sin cuerpo | `PUT`/`DELETE` exitosos (excepto `PUT .../price` y `PUT .../status`, ver arriba). |
-| `400 Bad Request` | Referencia inválida o fallo de validación del dominio | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe, un `name` vacío, un `price` negativo, un cambio de precio al mismo valor/negativo, o un cambio de estado al mismo valor. |
+| `400 Bad Request` | Referencia inválida, fallo de validación del dominio, o fallo de validación de enum | `POST`/`PUT` en `Subscriptions` con un `categoryId` que no existe, un `name` vacío, un `price` negativo, un `billingCycle`/`newStatus` no definido, un cambio de precio al mismo valor/negativo, o un cambio de estado al mismo valor. |
 | `404 Not Found` | El recurso no existe | `GET`/`PUT`/`DELETE` con un `id` que no está en la base de datos. |
 | `409 Conflict` | Recurso duplicado, o violación de una restricción de la base de datos | `POST`/`PUT` en `Categories`/`Subscriptions` con un nombre ya en uso (sin distinguir mayúsculas/minúsculas) dentro de ese ámbito, o `DELETE /api/Categories/{id}` sobre una categoría que todavía tiene suscripciones. |
 | `500 Internal Server Error` | Excepción realmente sin manejar | No se espera en uso normal — todas las carencias conocidas anteriores ya están mapeadas a `400`/`409` por los manejadores de excepciones descritos en [Notas generales](#notas-generales). |
