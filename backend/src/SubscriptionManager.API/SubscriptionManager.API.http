@@ -39,7 +39,7 @@ Content-Type: application/json
 GET {{HostAddress}}/api/Categories/999999
 Accept: application/json
 
-### Create a category with an empty name -> currently 500 (see docs/Api known gap)
+### Create a category with an empty name -> expect 400
 POST {{HostAddress}}/api/Categories
 Content-Type: application/json
 
@@ -131,7 +131,7 @@ Content-Type: application/json
   "newPrice": 14.99
 }
 
-### Change it again to the SAME price -> expect 500 (known gap, see docs/Api)
+### Change it again to the SAME price -> expect 400
 PUT {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}/price
 Content-Type: application/json
 
@@ -146,6 +146,9 @@ Content-Type: application/json
 {
   "newPrice": 5
 }
+
+### Delete the category used by the subscription above while it still has a subscription -> expect 409
+DELETE {{HostAddress}}/api/Categories/{{createCategoryForSubscription.response.body.$.id}}
 
 ### Delete the subscription created above
 DELETE {{HostAddress}}/api/Subscriptions/{{createSubscription.response.body.$.id}}
