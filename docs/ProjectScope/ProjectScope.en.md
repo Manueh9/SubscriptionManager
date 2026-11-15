@@ -42,15 +42,14 @@ It provides a centralized overview of:
 - [x] Organize subscriptions into categories.
 - [x] Keep track of subscription status (active, paused, cancelled).
 - [x] Provide a clear overview of monthly and yearly expenses.
-- [ ] Improve backend development skills using .NET and ASP.NET Core.
 
-> The first seven are checked off on the backend side — every one of them is exposed by a REST endpoint (see the [API Reference](../Api/Api.en.md)). The last one is an ongoing personal goal, not a feature to complete. None of this is usable by an actual person yet — that's what the frontend is for.
+> All checked off on the backend side — every one of them is exposed by a REST endpoint (see the [API Reference](../Api/Api.en.md)). None of this is usable by an actual person yet, though — that's what the frontend is for.
 
 ---
 
 ## 📐 Scope — MVP v1.0
 
-The first version focuses on the core domain needed to manage subscriptions. The following entities define the MVP; their detailed attributes and relationships are still to be defined in the domain model.
+The first version focuses on the core domain needed to manage subscriptions. These three entities define the MVP — see [Database](../Database/Database.en.md) for their exact attributes, constraints and relationships.
 
 | Entity | Purpose |
 |---|---|
@@ -59,8 +58,6 @@ The first version focuses on the core domain needed to manage subscriptions. The
 | **PriceHistory** | Records each price change of a subscription (old price, new price, date) so changes over time can be tracked. |
 
 > The application is single-tenant and local-only, so a `User` entity is not needed for the MVP — there's no login and no multi-user data to distinguish. It may be introduced later if cloud sync or multi-user support is added (see [Out of Scope](#-out-of-scope-mvp)).
-
-> ⚠️ **Note:** this table lists the core entities agreed on for the MVP. Attributes, relationships, and validation rules will be defined when the domain model is implemented.
 
 ---
 

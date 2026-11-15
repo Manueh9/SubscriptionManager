@@ -42,15 +42,14 @@ Ofrece una visión centralizada de:
 - [x] Organizar las suscripciones por categorías.
 - [x] Llevar el control del estado de cada suscripción (activa, pausada, cancelada).
 - [x] Ofrecer una visión clara del gasto mensual y anual.
-- [ ] Mejorar las habilidades de desarrollo backend usando .NET y ASP.NET Core.
 
-> Los primeros siete están marcados desde el lado del backend — cada uno se expone a través de un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). El último es un objetivo personal continuo, no una feature que se pueda completar. Nada de esto es todavía usable por una persona — para eso está el frontend.
+> Todos marcados desde el lado del backend — cada uno se expone a través de un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). Nada de esto es todavía usable por una persona, sin embargo — para eso está el frontend.
 
 ---
 
 ## 📐 Alcance — MVP v1.0
 
-La primera versión se centra en el dominio esencial necesario para gestionar suscripciones. Las siguientes entidades definen el MVP; sus atributos y relaciones detalladas aún están por definir en el modelo de dominio.
+La primera versión se centra en el dominio esencial necesario para gestionar suscripciones. Estas tres entidades definen el MVP — ver [Base de Datos](../Database/Database.es.md) para sus atributos, restricciones y relaciones exactas.
 
 | Entidad | Propósito |
 |---|---|
@@ -59,8 +58,6 @@ La primera versión se centra en el dominio esencial necesario para gestionar su
 | **PriceHistory (Historial de precios)** | Registra cada cambio de precio de una suscripción (precio anterior, precio nuevo, fecha) para poder consultar su evolución. |
 
 > La aplicación es mono-usuario y de uso exclusivamente local, por lo que no se necesita una entidad `User` en el MVP — no hay login ni datos de varios usuarios que distinguir. Podría introducirse más adelante si se añade sincronización en la nube o soporte multiusuario (ver [Fuera de alcance](#-fuera-de-alcance-mvp)).
-
-> ⚠️ **Nota:** esta tabla recoge las entidades principales acordadas para el MVP. Los atributos, relaciones y reglas de validación se definirán al implementar el modelo de dominio.
 
 ---
 
