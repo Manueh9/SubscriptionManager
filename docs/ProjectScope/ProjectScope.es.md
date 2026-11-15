@@ -44,7 +44,7 @@ Ofrece una visión centralizada de:
 - [x] Ofrecer una visión clara del gasto mensual y anual.
 - [ ] Dejar que el usuario haga todo lo anterior a través de una interfaz web — no llamando a la API directamente.
 
-> Los primeros siete están implementados en el backend, cada uno expuesto como un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). El último es lo que realmente falta para que la app sea usable por una persona de principio a fin — ese es el trabajo del frontend, y todavía no ha empezado (ver [Estado del Proyecto](../../README.es.md#-estado-del-proyecto)).
+> Los primeros siete están implementados en el backend, cada uno expuesto como un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). El último es lo que realmente falta para que la app sea usable por una persona de principio a fin — ese es el trabajo del frontend, y todavía no ha empezado (ver [Estado del Proyecto](../../README.es.md#-estado-del-proyecto) y la [Hoja de Ruta](../Roadmap/Roadmap.es.md) para lo que está planeado, en orden).
 
 ---
 
@@ -68,7 +68,7 @@ La primera versión se centra en el dominio esencial necesario para gestionar su
 |---|---|
 | Backend / API | ASP.NET Core Web API (.NET 10), C# |
 | Persistencia | Entity Framework Core + SQLite |
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, Framer Motion |
 | Testing | xUnit |
 
 ---

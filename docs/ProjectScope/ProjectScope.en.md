@@ -44,7 +44,7 @@ It provides a centralized overview of:
 - [x] Provide a clear overview of monthly and yearly expenses.
 - [ ] Let the user do all of the above through a web interface — not by calling the API directly.
 
-> The first seven are implemented on the backend, each exposed as a REST endpoint (see the [API Reference](../Api/Api.en.md)). The last one is what's actually missing for the app to be usable by a person end to end — that's the frontend's job, and it hasn't started yet (see [Project Status](../../README.md#-project-status)).
+> The first seven are implemented on the backend, each exposed as a REST endpoint (see the [API Reference](../Api/Api.en.md)). The last one is what's actually missing for the app to be usable by a person end to end — that's the frontend's job, and it hasn't started yet (see [Project Status](../../README.md#-project-status) and the [Roadmap](../Roadmap/Roadmap.en.md) for what's planned, in order).
 
 ---
 
@@ -68,7 +68,7 @@ The first version focuses on the core domain needed to manage subscriptions. The
 |---|---|
 | Backend / API | ASP.NET Core Web API (.NET 10), C# |
 | Persistence | Entity Framework Core + SQLite |
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, Framer Motion |
 | Testing | xUnit |
 
 ---

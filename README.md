@@ -12,13 +12,13 @@
 |---|---|
 | Backend / API | ASP.NET Core Web API (.NET 10), C# |
 | Persistence | Entity Framework Core + SQLite |
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, Framer Motion |
 | Testing | xUnit |
 
 ## 🚦 Project Status
 
 - ✅ **Backend API** — complete for the MVP scope: `Categories` and `Subscriptions` CRUD, price changes with history (`PriceHistories`), subscription status changes, an upcoming-renewals view, and a monthly/yearly expense summary. See the [API Reference](docs/Api/Api.en.md) for the full endpoint list.
-- 🚧 **Frontend** — not started yet.
+- 🚧 **Frontend** — not started yet. See the [Roadmap](docs/Roadmap/Roadmap.en.md) for what's planned, in order, and the chosen [dashboard design](docs/Design/Dashboard.es.md).
 
 ## ▶️ Getting Started
 
@@ -40,7 +40,9 @@ dotnet test
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
 | Project Scope | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
+| Roadmap | [English](docs/Roadmap/Roadmap.en.md) | [Español](docs/Roadmap/Roadmap.es.md) |
 | Architecture & Request Lifecycle | [English](docs/Architecture/Architecture.en.md) | [Español](docs/Architecture/Architecture.es.md) |
 | Database | [English](docs/Database/Database.en.md) | [Español](docs/Database/Database.es.md) |
 | API Reference | [English](docs/Api/Api.en.md) | [Español](docs/Api/Api.es.md) |
 | Testing Guide | [English](docs/Testing/Testing.en.md) | [Español](docs/Testing/Testing.es.md) |
+| Design — Dashboard | — | [Español](docs/Design/Dashboard.es.md) |
