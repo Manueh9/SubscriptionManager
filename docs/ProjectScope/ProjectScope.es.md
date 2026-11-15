@@ -42,8 +42,9 @@ Ofrece una visión centralizada de:
 - [x] Organizar las suscripciones por categorías.
 - [x] Llevar el control del estado de cada suscripción (activa, pausada, cancelada).
 - [x] Ofrecer una visión clara del gasto mensual y anual.
+- [ ] Dejar que el usuario haga todo lo anterior a través de una interfaz web — no llamando a la API directamente.
 
-> Todos marcados desde el lado del backend — cada uno se expone a través de un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). Nada de esto es todavía usable por una persona, sin embargo — para eso está el frontend.
+> Los primeros siete están implementados en el backend, cada uno expuesto como un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). El último es lo que realmente falta para que la app sea usable por una persona de principio a fin — ese es el trabajo del frontend, y todavía no ha empezado (ver [Estado del Proyecto](../../README.es.md#-estado-del-proyecto)).
 
 ---
 

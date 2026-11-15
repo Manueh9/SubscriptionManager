@@ -42,8 +42,9 @@ It provides a centralized overview of:
 - [x] Organize subscriptions into categories.
 - [x] Keep track of subscription status (active, paused, cancelled).
 - [x] Provide a clear overview of monthly and yearly expenses.
+- [ ] Let the user do all of the above through a web interface — not by calling the API directly.
 
-> All checked off on the backend side — every one of them is exposed by a REST endpoint (see the [API Reference](../Api/Api.en.md)). None of this is usable by an actual person yet, though — that's what the frontend is for.
+> The first seven are implemented on the backend, each exposed as a REST endpoint (see the [API Reference](../Api/Api.en.md)). The last one is what's actually missing for the app to be usable by a person end to end — that's the frontend's job, and it hasn't started yet (see [Project Status](../../README.md#-project-status)).
 
 ---
 
