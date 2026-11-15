@@ -54,7 +54,9 @@ public class PriceHistoriesController(SubscriptionManagerDbContext dbContext) : 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<PriceHistoryResponse>> GetById(int id)
     {
-        var priceHistory = await dbContext.PriceHistories.FindAsync(id);
+        var priceHistory = await dbContext.PriceHistories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(priceHistory => priceHistory.Id == id);
 
         if (priceHistory is null)
         {

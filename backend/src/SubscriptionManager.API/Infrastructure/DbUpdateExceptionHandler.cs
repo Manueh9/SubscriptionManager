@@ -1,19 +1,21 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SubscriptionManager.API.Infrastructure.Persistence;
 
 namespace SubscriptionManager.API.Infrastructure;
 
 /// <summary>
-/// Maps an unhandled <see cref="DbUpdateException"/> (e.g. a foreign-key RESTRICT violation
-/// on delete, or a unique-constraint race not already caught by the controller) to a 409
-/// Conflict instead of letting it surface as an unhandled 500.
+/// Maps a database constraint violation (a unique index, or a foreign-key RESTRICT on delete)
+/// to a 409 Conflict. Other causes of <see cref="DbUpdateException"/> (e.g. a transient
+/// "database is locked" error under concurrent writes) are left unhandled, so they still
+/// surface as a genuine unhandled 500 instead of being misreported as a 409 data conflict.
 /// </summary>
 public class DbUpdateExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        if (exception is not DbUpdateException)
+        if (exception is not DbUpdateException dbUpdateException || !dbUpdateException.IsConstraintViolation())
         {
             return false;
         }

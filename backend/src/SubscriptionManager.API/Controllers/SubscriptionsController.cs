@@ -53,7 +53,9 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
     [HttpGet("{id:int}")]
     public async Task<ActionResult<SubscriptionResponse>> GetById(int id)
     {
-        var subscription = await dbContext.Subscriptions.FindAsync(id);
+        var subscription = await dbContext.Subscriptions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(subscription => subscription.Id == id);
 
         if (subscription is null)
         {
@@ -81,6 +83,7 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
         var horizon = today.AddDays(withinDays);
 
         var subscriptions = await dbContext.Subscriptions
+            .AsNoTracking()
             .Where(subscription => subscription.Status == SubscriptionStatus.Active)
             .ToListAsync();
 
@@ -136,11 +139,7 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
 
         dbContext.Subscriptions.Add(subscription);
 
-        try
-        {
-            await dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
+        if (!await dbContext.TrySaveChangesAsync())
         {
             return Conflict($"A subscription named '{request.Name}' already exists in this category.");
         }
@@ -185,11 +184,7 @@ public class SubscriptionsController(SubscriptionManagerDbContext dbContext) : C
 
         subscription.UpdateDetails(request.Name, request.Description, request.BillingCycle, request.StartDate, request.EndDate, category);
 
-        try
-        {
-            await dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
+        if (!await dbContext.TrySaveChangesAsync())
         {
             return Conflict($"A subscription named '{request.Name}' already exists in this category.");
         }

@@ -41,7 +41,9 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CategoryResponse>> GetById(int id)
     {
-        var category = await dbContext.Categories.FindAsync(id);
+        var category = await dbContext.Categories
+            .AsNoTracking()
+            .FirstOrDefaultAsync(category => category.Id == id);
 
         if (category is null)
         {
@@ -74,11 +76,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
 
         dbContext.Categories.Add(category);
 
-        try
-        {
-            await dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
+        if (!await dbContext.TrySaveChangesAsync())
         {
             return Conflict($"A category named '{request.Name}' already exists.");
         }
@@ -115,11 +113,7 @@ public class CategoriesController(SubscriptionManagerDbContext dbContext) : Cont
 
         category.Rename(request.Name);
 
-        try
-        {
-            await dbContext.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
+        if (!await dbContext.TrySaveChangesAsync())
         {
             return Conflict($"A category named '{request.Name}' already exists.");
         }

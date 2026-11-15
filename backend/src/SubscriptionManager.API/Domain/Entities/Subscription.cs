@@ -69,18 +69,17 @@ public class Subscription
         }
 
         var today = asOf.Date;
-        var next = StartDate.Date;
+        var start = StartDate.Date;
 
-        while (next < today)
-        {
-            next = BillingCycle switch
+        var next = start >= today
+            ? start
+            : BillingCycle switch
             {
-                BillingCycle.Day => next.AddDays(1),
-                BillingCycle.Monthly => next.AddMonths(1),
-                BillingCycle.Yearly => next.AddYears(1),
+                BillingCycle.Day => today,
+                BillingCycle.Monthly => NextMonthlyOccurrence(start, today, monthsPerCycle: 1),
+                BillingCycle.Yearly => NextMonthlyOccurrence(start, today, monthsPerCycle: 12),
                 _ => throw new ArgumentOutOfRangeException(nameof(BillingCycle))
             };
-        }
 
         if (EndDate is not null && next > EndDate.Value.Date)
         {
@@ -88,6 +87,17 @@ public class Subscription
         }
 
         return next;
+
+        // Always recomputes from the original `start` (never from a previously-clipped
+        // intermediate date), so a short month (e.g. a 31st or a Feb 29th) only gets clipped
+        // by AddMonths once per call instead of compounding across every step after it.
+        static DateTime NextMonthlyOccurrence(DateTime start, DateTime today, int monthsPerCycle)
+        {
+            var cyclesElapsed = (((today.Year - start.Year) * 12) + today.Month - start.Month) / monthsPerCycle;
+            var next = start.AddMonths(cyclesElapsed * monthsPerCycle);
+
+            return next < today ? start.AddMonths((cyclesElapsed + 1) * monthsPerCycle) : next;
+        }
     }
 
     public void UpdateDetails(string name, string description, BillingCycle billingCycle, DateTime startDate, DateTime? endDate, Category category)
