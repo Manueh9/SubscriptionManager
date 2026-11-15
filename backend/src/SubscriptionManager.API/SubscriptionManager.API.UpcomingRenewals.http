@@ -1,0 +1,193 @@
+@HostAddress = http://localhost:5166
+
+### ================= Setup =================
+
+### Create a category to attach every subscription below to
+# @name createCategory
+POST {{HostAddress}}/api/Categories
+Content-Type: application/json
+
+{
+  "name": "Renewals-{{$guid}}"
+}
+
+### ================= Case 1: start date in the future =================
+### The first renewal IS the start date itself, even though it hasn't happened yet.
+
+# @name futureStart
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "FutureStart-{{$guid}}",
+  "description": "Starts in the future",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2027-06-15T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Expect it in the list with nextRenewalDate = 2027-06-15 (well beyond the default window, so use a wide one)
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=100000
+Accept: application/json
+
+### ================= Case 2: Day billing cycle, started long ago =================
+### Every day is an occurrence, so the next one is always today.
+
+# @name dailyStartedLongAgo
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "DailyLongAgo-{{$guid}}",
+  "description": "Billed every day",
+  "price": 0.5,
+  "billingCycle": 0,
+  "startDate": "2020-01-01T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Expect it in the list with nextRenewalDate = today
+GET {{HostAddress}}/api/Subscriptions/upcoming
+Accept: application/json
+
+### ================= Case 3: Monthly cycle starting on day 31 (the fixed clipping bug) =================
+### Before the fix, stepping Jan 31 -> Feb 28 -> Mar 28 -> Apr 28 (compounding the clip from
+### the short February) instead of correctly landing back on day 31/30 every other month.
+### After the fix, every occurrence is computed fresh from Jan 31, so short months only clip
+### that one occurrence (e.g. Feb 28) without dragging every later month down with it.
+
+# @name monthlyDay31
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "MonthlyDay31-{{$guid}}",
+  "description": "Started on the 31st",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-31T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Inspect nextRenewalDate here: it must be the correct last day of the upcoming month
+### (e.g. the 30th or 31st, never stuck on 28 unless the upcoming month really is February)
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=60
+Accept: application/json
+
+### ================= Case 4: Yearly cycle starting on Feb 29 (leap day) =================
+### Same clipping concern as Case 3, but year-by-year: in a non-leap year it lands on Feb 28
+### for that one year only, not for every year after it.
+
+# @name yearlyLeapDay
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "YearlyLeapDay-{{$guid}}",
+  "description": "Started on Feb 29",
+  "price": 49.99,
+  "billingCycle": 2,
+  "startDate": "2024-02-29T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Inspect nextRenewalDate here: Feb 28 in a non-leap year, Feb 29 in a leap year - never
+### drifting to a different month
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=600
+Accept: application/json
+
+### ================= Case 5: paused subscriptions are excluded =================
+
+# @name toBePaused
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "ToBePaused-{{$guid}}",
+  "description": "Will be paused",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Pause it
+PUT {{HostAddress}}/api/Subscriptions/{{toBePaused.response.body.$.id}}/status
+Content-Type: application/json
+
+{
+  "newStatus": 1
+}
+
+### Expect it NOT in the list, even with a huge window
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=100000
+Accept: application/json
+
+### ================= Case 6: EndDate before the computed next renewal =================
+
+# @name toBeEnded
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "ToBeEnded-{{$guid}}",
+  "description": "Will end before its next renewal",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Set an EndDate in the past
+PUT {{HostAddress}}/api/Subscriptions/{{toBeEnded.response.body.$.id}}
+Content-Type: application/json
+
+{
+  "name": "ToBeEnded",
+  "description": "Will end before its next renewal",
+  "billingCycle": 1,
+  "startDate": "2026-01-01T00:00:00Z",
+  "endDate": "2026-01-02T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### Expect it NOT in the list, even with a huge window
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=100000
+Accept: application/json
+
+### ================= Case 7: withinDays boundary =================
+### A fixed near-future date so a narrow window excludes it and a wide one includes it.
+### If you're running this file long after it was written, bump the date further out so it's
+### still in the future relative to "today".
+
+# @name nearFutureStart
+POST {{HostAddress}}/api/Subscriptions
+Content-Type: application/json
+
+{
+  "name": "NearFutureStart-{{$guid}}",
+  "description": "Starts a couple of weeks out",
+  "price": 9.99,
+  "billingCycle": 1,
+  "startDate": "2026-12-01T00:00:00Z",
+  "categoryId": {{createCategory.response.body.$.id}}
+}
+
+### A narrow window excludes it...
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=1
+Accept: application/json
+
+### ...a wide one includes it
+GET {{HostAddress}}/api/Subscriptions/upcoming?withinDays=100000
+Accept: application/json
+
+### ================= Note =================
+### DbUpdateExceptionHandler's distinction between a real constraint violation (409, already
+### exercised above and in the main .http file) and a transient SQLite error (left as an
+### unhandled 500) can't be triggered through a single manual request - it needs genuine
+### concurrent writes. That case is covered by DbUpdateExceptionHandlerTests instead.
+
+### Trying to delete the category created above still returns 409: none of the subscriptions
+### created in this file were deleted, so it still has subscriptions assigned to it.
+DELETE {{HostAddress}}/api/Categories/{{createCategory.response.body.$.id}}
