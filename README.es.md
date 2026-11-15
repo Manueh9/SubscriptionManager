@@ -40,6 +40,7 @@ dotnet test
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
 | Alcance del Proyecto | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
+| Arquitectura y Ciclo de Vida de una Petición | [English](docs/Architecture/Architecture.en.md) | [Español](docs/Architecture/Architecture.es.md) |
 | Base de Datos | [English](docs/Database/Database.en.md) | [Español](docs/Database/Database.es.md) |
 | Referencia de la API | [English](docs/Api/Api.en.md) | [Español](docs/Api/Api.es.md) |
 | Guía de Pruebas | [English](docs/Testing/Testing.en.md) | [Español](docs/Testing/Testing.es.md) |
