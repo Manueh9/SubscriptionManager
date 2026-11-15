@@ -32,6 +32,8 @@ The console prints the URL it's listening on, e.g. `http://localhost:5166`. Keep
 
 The project already has `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organized in sections, with ready-made requests for `Categories`, `Subscriptions` (including the price-change, status-change and upcoming-renewals endpoints), the read-only `PriceHistories`, and the read-only `Expenses` summary — covering the happy path plus the documented `404`/`400`/`409` cases.
 
+There's a second file, `SubscriptionManager.API.UpcomingRenewals.http`, split out on its own because it's long and narrowly focused: it exhaustively exercises `GET /api/Subscriptions/upcoming` — a future start date, the `Day` cycle, a `Monthly` start date on the 31st and a `Yearly` one on Feb 29 (the exact edge cases the renewal-date calculation was fixed for), excluding paused subscriptions, excluding ones whose `EndDate` has passed, and the `withinDays` boundary.
+
 1. Open it in **Rider** or **VS Code** (with the *REST Client* extension).
 2. Click "Send Request" (or the ▶️ that appears above each block) on each `###`-separated request, top to bottom.
 3. Requests that create something are named (`# @name createCategory`, `# @name createSubscription`, ...), and requests below them reuse the returned `id` automatically (e.g. `{{createCategory.response.body.$.id}}`) — so running a section in order chains create → get → update → delete without you having to copy any id by hand.
@@ -67,6 +69,14 @@ dotnet test
 
 It currently covers the happy paths for `Categories`, `Subscriptions`, `PriceHistories` and `Expenses`, plus the `400`/`404`/`409` edge cases documented in the [API Reference](../Api/Api.en.md) — including regression checks for both global exception handlers (`ArgumentExceptionHandler` for the empty-name/negative-price/same-price/same-status guard clauses, and `DbUpdateExceptionHandler` for deleting a category that still has subscriptions), the daily/monthly/yearly cost conversion used by the expense summary, the renewal-date math (window boundaries, paused subscriptions, ended subscriptions) used by `/api/Subscriptions/upcoming`, and the `[EnumDataType]` validation that rejects an undefined `billingCycle`/`newStatus`.
 
+Some of the test files skip HTTP entirely, because what they cover is better tested as plain input/output on an isolated piece of logic than through a full round trip:
+
+- `SubscriptionRenewalDateTests` calls `Subscription.GetNextRenewalDate` directly — no server, no database — covering every branch (status, a future start date, each billing cycle, the day-31/Feb-29 clipping edge case, the `EndDate` cap) far more exhaustively than would be practical over HTTP.
+- `DbUpdateExceptionHandlerTests` calls the handler directly with a crafted `DbUpdateException`, confirming it claims a real `SQLITE_CONSTRAINT` violation (`409`) but leaves a transient error like a locked database unhandled (so it still surfaces as `500`) — a distinction that isn't practical to trigger through a single manual HTTP request.
+- `TrySaveChangesTests` exercises the controllers' shared save helper against a real in-memory SQLite database (no HTTP), so it also verifies the assumption the helper rests on: that SQLite really does report a duplicate name, a case-insensitive duplicate, and a `RESTRICT` delete as constraint violations. It deliberately uses a fresh `DbContext` per operation, mirroring the real per-request lifetime — sharing one context would let EF's change tracker pre-empt the `RESTRICT` with its own exception before SQLite ever sees the delete.
+
+`UpcomingRenewalsEndpointsTests` still includes one HTTP-level regression test for the day-31 case, confirming the controller wires the (separately, exhaustively tested) domain calculation through correctly end-to-end.
+
 `ExpensesEndpointsTests` and `UpcomingRenewalsEndpointsTests` give each test its own `WebApiFactory` (and therefore its own empty database) instead of sharing one via `IClassFixture`, since both endpoints aggregate across every subscription in the database and would otherwise see data left behind by sibling tests.
 
 ---
@@ -101,4 +111,4 @@ This mirrors the flow already verified while building the API — a good order t
 
 ---
 
-<p align="center"><sub>Last updated: 2026-11-13</sub></p>
+<p align="center"><sub>Last updated: 2026-11-15</sub></p>

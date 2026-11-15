@@ -32,6 +32,8 @@ La consola imprime la URL en la que está escuchando, p. ej. `http://localhost:5
 
 El proyecto ya tiene `backend/src/SubscriptionManager.API/SubscriptionManager.API.http`, organizado en secciones, con peticiones ya montadas para `Categories`, `Subscriptions` (incluidos los endpoints de cambio de precio, de estado y de próximas renovaciones), el `PriceHistories` de solo lectura, y el resumen de `Expenses` de solo lectura — cubriendo el camino feliz más los casos documentados de `404`/`400`/`409`.
 
+Hay un segundo fichero, `SubscriptionManager.API.UpcomingRenewals.http`, separado por ser largo y muy específico: ejercita a fondo `GET /api/Subscriptions/upcoming` — una fecha de inicio en el futuro, el ciclo `Day`, una suscripción `Monthly` que empieza el día 31 y otra `Yearly` que empieza el 29 de febrero (justo los casos límite para los que se arregló el cálculo de la fecha de renovación), excluir suscripciones pausadas, excluir las que ya tienen `EndDate` pasado, y el límite de `withinDays`.
+
 1. Ábrelo en **Rider** o **VS Code** (con la extensión *REST Client*).
 2. Pulsa "Send Request" (o la ▶️ que aparece encima de cada bloque) en cada petición separada por `###`, de arriba a abajo.
 3. Las peticiones que crean algo tienen nombre (`# @name createCategory`, `# @name createSubscription`, ...), y las de abajo reutilizan automáticamente el `id` que devuelven (p. ej. `{{createCategory.response.body.$.id}}`) — así que ejecutando una sección en orden se encadenan crear → obtener → actualizar → borrar sin que tengas que copiar ningún id a mano.
@@ -67,6 +69,14 @@ dotnet test
 
 Hoy cubre el camino feliz de `Categories`, `Subscriptions`, `PriceHistories` y `Expenses`, más los casos límite `400`/`404`/`409` documentados en la [Referencia de la API](../Api/Api.es.md) — incluidas comprobaciones de regresión de los dos manejadores globales de excepciones (`ArgumentExceptionHandler` para las validaciones de nombre vacío/precio negativo/mismo precio/mismo estado, y `DbUpdateExceptionHandler` para borrar una categoría que todavía tiene suscripciones), la conversión de coste diario/mensual/anual que usa el resumen de gastos, el cálculo de fecha de renovación (límites de la ventana, suscripciones pausadas, suscripciones terminadas) que usa `/api/Subscriptions/upcoming`, y la validación `[EnumDataType]` que rechaza un `billingCycle`/`newStatus` no definido.
 
+Algunos ficheros de test se saltan HTTP por completo, porque lo que cubren se testea mejor como entrada/salida simple sobre una pieza de lógica aislada que dando toda la vuelta:
+
+- `SubscriptionRenewalDateTests` llama directamente a `Subscription.GetNextRenewalDate` — sin servidor, sin base de datos — cubriendo cada rama (estado, fecha de inicio en el futuro, cada ciclo de facturación, el caso límite del recorte del día 31/29 de febrero, el tope de `EndDate`) de forma mucho más exhaustiva de lo que sería práctico por HTTP.
+- `DbUpdateExceptionHandlerTests` llama directamente al manejador con un `DbUpdateException` construido a propósito, confirmando que reclama una violación real de `SQLITE_CONSTRAINT` (`409`) pero deja sin capturar un error transitorio como una base de datos bloqueada (así que sigue dando `500`) — una distinción que no es práctica de provocar con una sola petición HTTP manual.
+- `TrySaveChangesTests` ejercita el helper de guardado compartido de los controllers contra una base de datos SQLite en memoria real (sin HTTP), así que además verifica la premisa en la que se apoya el helper: que SQLite realmente informa de un nombre duplicado, un duplicado sin distinguir mayúsculas, y un borrado con `RESTRICT` como violaciones de restricción. Usa a propósito un `DbContext` nuevo por operación, imitando la vida real por petición — compartir un solo contexto dejaría que el *change tracker* de EF se adelantara al `RESTRICT` con su propia excepción antes de que SQLite llegue a ver el borrado.
+
+`UpcomingRenewalsEndpointsTests` conserva un test de regresión a nivel HTTP para el caso del día 31, confirmando que el controller conecta correctamente de principio a fin con el cálculo de dominio (ya testeado a fondo por separado).
+
 `ExpensesEndpointsTests` y `UpcomingRenewalsEndpointsTests` le dan a cada test su propia `WebApiFactory` (y por tanto su propia base de datos vacía) en vez de compartir una vía `IClassFixture`, porque ambos endpoints agregan todas las suscripciones de la base de datos y de lo contrario verían datos dejados por tests hermanos.
 
 ---
@@ -101,4 +111,4 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-13</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-15</sub></p>

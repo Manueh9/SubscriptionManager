@@ -22,9 +22,28 @@
 - Base URL (local dev): `http://localhost:<port>/api` (port comes from `Properties/launchSettings.json`).
 - All requests/responses use `Content-Type: application/json`.
 - There is currently **no authentication** — the app is local-first and single-tenant (see [Project Scope](../ProjectScope/ProjectScope.en.md)).
-- ✅ Two global exception handlers (registered via `app.UseExceptionHandler()`) turn expected failures into proper status codes instead of a raw `500`: `ArgumentExceptionHandler` maps domain guard-clause failures (`ArgumentException`/`ArgumentOutOfRangeException` — an empty `name`, a negative `price`, changing a price or status to the same value) to `400 Bad Request`; `DbUpdateExceptionHandler` maps database constraint violations (`DbUpdateException` — e.g. deleting a category that still has subscriptions) to `409 Conflict`. Both return a `ProblemDetails` body.
-- ✅ Duplicate-name conflicts (`409`) are already handled safely, including under concurrent requests: the controller pre-checks for a duplicate, and the database's unique constraint (caught by `DbUpdateExceptionHandler` if two requests race past that check) is the safety net — either path returns `409`, never a raw `500`.
+- ✅ Two global exception handlers (registered via `app.UseExceptionHandler()`) turn expected failures into proper status codes instead of a raw `500`: `ArgumentExceptionHandler` maps domain guard-clause failures (`ArgumentException`/`ArgumentOutOfRangeException` — an empty `name`, a negative `price`, changing a price or status to the same value) to `400 Bad Request`; `DbUpdateExceptionHandler` maps a **real** database constraint violation (`DbUpdateException` wrapping a SQLite `SQLITE_CONSTRAINT` error — e.g. deleting a category that still has subscriptions) to `409 Conflict`. Both return a `ProblemDetails` body.
+- ✅ Duplicate-name conflicts (`409`) are already handled safely, including under concurrent requests: the controller pre-checks for a duplicate, and the database's unique constraint is the safety net if two requests race past that check — either path returns `409` with a message naming the duplicate, never a raw `500`. The controllers save through a shared `TrySaveChangesAsync` helper for that second path, so all four write endpoints make this distinction identically.
 - ✅ `billingCycle` and `newStatus` are validated against their enum's defined values (via `[EnumDataType]`). An undefined integer (e.g. `"billingCycle": 999`) is rejected with `400 Bad Request` by ASP.NET Core's built-in `[ApiController]` model validation — it never reaches the domain layer or gets stored. This response has a slightly different shape from the one above: `{"title": "One or more validation errors occurred.", "status": 400, "errors": {"BillingCycle": ["The field BillingCycle is invalid."]}}` (a `ValidationProblemDetails`, not the plain `ProblemDetails` the exception handlers return).
+- ✅ Only a genuine constraint violation becomes a `409`. A transient database error (e.g. SQLite's "database is locked" under concurrent writes) is also a `DbUpdateException`, but it is **not** a data conflict — reporting it as `409` would tell the client "don't retry, your data is stale" when the right answer is "retry, this was a hiccup". Both the global handler and the controllers' `TrySaveChangesAsync` test for `SQLITE_CONSTRAINT` specifically (one shared `IsConstraintViolation` check), so a transient failure is deliberately left to surface as a genuine `500`.
+
+```mermaid
+flowchart TD
+    Start(["Request arrives"]) --> MV{"Model validation<br/>(e.g. [EnumDataType] on<br/>billingCycle / newStatus)"}
+    MV -- invalid --> MV400["400 Bad Request<br/>(ValidationProblemDetails)<br/>action never runs"]
+    MV -- valid --> Action["Controller action runs"]
+    Action -- "pre-checks fail" --> Explicit["404 Not Found / 400 Bad Request /<br/>409 Conflict returned by the action,<br/>with a specific message"]
+    Action -- "saves via<br/>TrySaveChangesAsync" --> Save{"Save outcome?"}
+    Save -- "succeeded" --> Ok["200 / 201 / 204"]
+    Save -- "constraint violation<br/>(lost a duplicate-name race)" --> Save409["409 Conflict,<br/>naming the duplicate"]
+    Save -- "anything else<br/>(e.g. a transient DB lock)" --> Rethrow["rethrown"]
+    Action -- throws --> EH
+    Rethrow --> EH{"Unhandled exception type?"}
+    EH -- "ArgumentException /<br/>ArgumentOutOfRangeException" --> AEH["ArgumentExceptionHandler<br/>400 Bad Request"]
+    EH -- "DbUpdateException whose inner<br/>SqliteException has SqliteErrorCode 19<br/>(SQLITE_CONSTRAINT)" --> DEH["DbUpdateExceptionHandler<br/>409 Conflict (generic message)"]
+    EH -- "anything else" --> Unhandled["500 Internal Server Error"]
+```
+> Both `TrySaveChangesAsync` and `DbUpdateExceptionHandler` decide with the same shared `IsConstraintViolation` check. The difference is only the message: a controller that knows *which* name collided says so, while the global handler — which catches e.g. the `RESTRICT` on deleting a category in use — returns a generic conflict message.
 
 ---
 
@@ -166,7 +185,26 @@ Returns a single subscription by id.
 
 Returns **active** subscriptions whose next renewal falls within a window of days from today, ordered by that date (soonest first). `Paused`/`Cancelled` subscriptions are excluded, as are ones that have already ended (`EndDate` in the past).
 
-The next renewal date is computed from `StartDate`, stepping forward by one `billingCycle` increment (`Day` → +1 day, `Monthly` → +1 month, `Yearly` → +1 year) until it reaches today or later — compared by calendar date, not exact time. A `StartDate` in the future is itself the first renewal.
+The next renewal date is computed from `StartDate` — compared by calendar date, not exact time. A `StartDate` in the future (or exactly today) is itself the first renewal. Otherwise: `Day` renews today; `Monthly`/`Yearly` jump straight to the correct occurrence (how many whole cycles have elapsed, bumped by one more if that lands before today) instead of stepping one cycle at a time, specifically so a start date like the 31st or Feb 29 only gets clipped to a shorter month (e.g. the 28th/30th) for *that* occurrence — not for every occurrence after it.
+
+```mermaid
+flowchart TD
+    Start(["GetNextRenewalDate(asOf)"]) --> Status{"Status == Active?"}
+    Status -- no --> Null1["return null"]
+    Status -- yes --> Future{"StartDate >= today?"}
+    Future -- yes --> UseStart["next = StartDate"]
+    Future -- no --> Cycle{"BillingCycle?"}
+    Cycle -- Day --> UseToday["next = today"]
+    Cycle -- Monthly --> StepM["elapsed = whole months since StartDate<br/>next = StartDate + elapsed months<br/>(+1 more month if still before today)"]
+    Cycle -- Yearly --> StepY["same computation,<br/>12 months per cycle"]
+    UseStart --> Cap
+    UseToday --> Cap
+    StepM --> Cap
+    StepY --> Cap
+    Cap{"EndDate set AND next > EndDate?"}
+    Cap -- yes --> Null2["return null"]
+    Cap -- no --> Return["return next"]
+```
 
 **Query parameters**
 
@@ -394,4 +432,4 @@ Each subscription's cost is converted to a yearly equivalent before summing — 
 
 ---
 
-<p align="center"><sub>Last updated: 2026-11-13</sub></p>
+<p align="center"><sub>Last updated: 2026-11-15</sub></p>

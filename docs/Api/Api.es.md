@@ -22,9 +22,28 @@
 - URL base (desarrollo local): `http://localhost:<puerto>/api` (el puerto sale de `Properties/launchSettings.json`).
 - Todas las peticiones/respuestas usan `Content-Type: application/json`.
 - Actualmente **no hay autenticación** — la app es local-first y mono-usuario (ver [Alcance del Proyecto](../ProjectScope/ProjectScope.es.md)).
-- ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio o el estado al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce las violaciones de restricciones de la base de datos (`DbUpdateException` — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
+- ✅ Dos manejadores globales de excepciones (registrados vía `app.UseExceptionHandler()`) convierten los fallos esperados en códigos de estado correctos en vez de un `500` sin control: `ArgumentExceptionHandler` traduce los fallos de las validaciones del dominio (`ArgumentException`/`ArgumentOutOfRangeException` — un `name` vacío, un `price` negativo, cambiar el precio o el estado al mismo valor) en `400 Bad Request`; `DbUpdateExceptionHandler` traduce una violación **real** de una restricción de la base de datos (`DbUpdateException` que envuelve un error `SQLITE_CONSTRAINT` de SQLite — p. ej. borrar una categoría que todavía tiene suscripciones) en `409 Conflict`. Ambos devuelven un cuerpo `ProblemDetails`.
+- ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos actúa como red de seguridad si dos peticiones llegan a la vez y superan esa comprobación — en cualquiera de los dos casos se devuelve `409` con un mensaje que nombra el duplicado, nunca un `500` sin control. Los controllers guardan a través de un helper compartido `TrySaveChangesAsync` para esa segunda ruta, así que los cuatro endpoints de escritura hacen esta distinción de forma idéntica.
 - ✅ `billingCycle` y `newStatus` se validan contra los valores definidos de su enum (vía `[EnumDataType]`). Un entero no definido (p. ej. `"billingCycle": 999`) se rechaza con `400 Bad Request` por la validación de modelo integrada de `[ApiController]` de ASP.NET Core — nunca llega a la capa de dominio ni se guarda. Esta respuesta tiene una forma algo distinta a la de arriba: `{"title": "One or more validation errors occurred.", "status": 400, "errors": {"BillingCycle": ["The field BillingCycle is invalid."]}}` (un `ValidationProblemDetails`, no el `ProblemDetails` simple que devuelven los manejadores de excepciones).
-- ✅ Los conflictos de nombre duplicado (`409`) ya están manejados de forma segura, incluso ante peticiones concurrentes: el controller comprueba primero si ya existe un duplicado, y la restricción única de la base de datos (capturada por `DbUpdateExceptionHandler` si dos peticiones llegan a la vez y superan esa comprobación) actúa como red de seguridad — en cualquiera de los dos casos se devuelve `409`, nunca un `500` sin control.
+- ✅ Solo una violación de restricción genuina se convierte en `409`. Un error transitorio de la base de datos (p. ej. "database is locked" de SQLite bajo escrituras concurrentes) también es un `DbUpdateException`, pero **no** es un conflicto de datos — informarlo como `409` le diría al cliente "no reintentes, tus datos están obsoletos" cuando la respuesta correcta es "reintenta, ha sido un bache puntual". Tanto el manejador global como el `TrySaveChangesAsync` de los controllers comprueban específicamente `SQLITE_CONSTRAINT` (una única comprobación compartida, `IsConstraintViolation`), así que un fallo transitorio se deja a propósito salir como un `500` genuino.
+
+```mermaid
+flowchart TD
+    Start(["Llega la petición"]) --> MV{"Validación de modelo<br/>(p. ej. [EnumDataType] en<br/>billingCycle / newStatus)"}
+    MV -- inválido --> MV400["400 Bad Request<br/>(ValidationProblemDetails)<br/>la acción nunca se ejecuta"]
+    MV -- válido --> Action["Se ejecuta la acción del controller"]
+    Action -- "fallan las comprobaciones previas" --> Explicit["404 Not Found / 400 Bad Request /<br/>409 Conflict devueltos por la acción,<br/>con un mensaje específico"]
+    Action -- "guarda vía<br/>TrySaveChangesAsync" --> Save{"¿Resultado del guardado?"}
+    Save -- "correcto" --> Ok["200 / 201 / 204"]
+    Save -- "violación de restricción<br/>(perdió una carrera de nombre duplicado)" --> Save409["409 Conflict,<br/>nombrando el duplicado"]
+    Save -- "cualquier otra cosa<br/>(p. ej. un bloqueo transitorio de la BD)" --> Rethrow["se relanza"]
+    Action -- lanza --> EH
+    Rethrow --> EH{"¿Tipo de excepción sin capturar?"}
+    EH -- "ArgumentException /<br/>ArgumentOutOfRangeException" --> AEH["ArgumentExceptionHandler<br/>400 Bad Request"]
+    EH -- "DbUpdateException cuya SqliteException<br/>interna tiene SqliteErrorCode 19<br/>(SQLITE_CONSTRAINT)" --> DEH["DbUpdateExceptionHandler<br/>409 Conflict (mensaje genérico)"]
+    EH -- "cualquier otra cosa" --> Unhandled["500 Internal Server Error"]
+```
+> Tanto `TrySaveChangesAsync` como `DbUpdateExceptionHandler` deciden con la misma comprobación compartida `IsConstraintViolation`. La diferencia es solo el mensaje: un controller que sabe *qué* nombre ha colisionado lo dice, mientras que el manejador global — que captura p. ej. el `RESTRICT` al borrar una categoría en uso — devuelve un mensaje de conflicto genérico.
 
 ---
 
@@ -166,7 +185,26 @@ Devuelve una suscripción concreta por su id.
 
 Devuelve las suscripciones **activas** (`Active`) cuya próxima renovación cae dentro de una ventana de días desde hoy, ordenadas por esa fecha (la más próxima primero). Se excluyen las `Paused`/`Cancelled`, así como las que ya han terminado (`EndDate` en el pasado).
 
-La fecha de la próxima renovación se calcula a partir de `StartDate`, avanzando de un incremento de `billingCycle` en uno (`Day` → +1 día, `Monthly` → +1 mes, `Yearly` → +1 año) hasta llegar a hoy o después — comparando por fecha de calendario, no por hora exacta. Un `StartDate` en el futuro es en sí mismo la primera renovación.
+La fecha de la próxima renovación se calcula a partir de `StartDate` — comparando por fecha de calendario, no por hora exacta. Un `StartDate` en el futuro (o exactamente hoy) es en sí mismo la primera renovación. Si no: `Day` renueva hoy; `Monthly`/`Yearly` saltan directamente a la ocurrencia correcta (cuántos ciclos completos han pasado, sumando uno más si eso cae antes de hoy) en vez de avanzar un ciclo cada vez, precisamente para que una fecha de inicio como el día 31 o el 29 de febrero solo se recorte a un mes más corto (p. ej. el 28/30) en *esa* ocurrencia — no en todas las siguientes.
+
+```mermaid
+flowchart TD
+    Start(["GetNextRenewalDate(asOf)"]) --> Status{"Status == Active?"}
+    Status -- no --> Null1["return null"]
+    Status -- yes --> Future{"StartDate >= today?"}
+    Future -- yes --> UseStart["next = StartDate"]
+    Future -- no --> Cycle{"BillingCycle?"}
+    Cycle -- Day --> UseToday["next = today"]
+    Cycle -- Monthly --> StepM["transcurridos = meses completos desde StartDate<br/>next = StartDate + transcurridos meses<br/>(+1 mes más si sigue antes de hoy)"]
+    Cycle -- Yearly --> StepY["mismo cálculo,<br/>12 meses por ciclo"]
+    UseStart --> Cap
+    UseToday --> Cap
+    StepM --> Cap
+    StepY --> Cap
+    Cap{"EndDate definido Y next > EndDate?"}
+    Cap -- yes --> Null2["return null"]
+    Cap -- no --> Return["return next"]
+```
 
 **Parámetros de consulta**
 
@@ -394,4 +432,4 @@ El coste de cada suscripción se convierte a su equivalente anual antes de sumar
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-13</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-15</sub></p>
