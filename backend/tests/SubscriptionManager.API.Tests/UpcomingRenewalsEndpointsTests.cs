@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using SubscriptionManager.API.DTO;
+using SubscriptionManager.API.Domain.Entities;
 using SubscriptionManager.API.Domain.Enum;
 
 namespace SubscriptionManager.API.Tests;
@@ -99,5 +100,25 @@ public class UpcomingRenewalsEndpointsTests : IDisposable
 
         Assert.DoesNotContain(narrowWindow!, renewal => renewal.SubscriptionId == subscription.Id);
         Assert.Contains(wideWindow!, renewal => renewal.SubscriptionId == subscription.Id);
+    }
+
+    [Fact]
+    public async Task GetUpcoming_MatchesTheDomainCalculation_EndToEnd_ForADay31StartDate()
+    {
+        // Regression test for the renewal-date clipping bug: verifies the controller wires
+        // Subscription.GetNextRenewalDate correctly end-to-end, for the exact kind of start
+        // date (day 31) that used to compound incorrectly across short months. The exhaustive
+        // correctness checks for the calculation itself live in SubscriptionRenewalDateTests.
+        var startDate = new DateTime(2020, 1, 31);
+        var categoryId = await CreateCategoryAsync();
+        var subscription = await CreateSubscriptionAsync(categoryId, startDate, BillingCycle.Monthly);
+
+        var expected = new Subscription("Reference", "Reference", 9.99m, BillingCycle.Monthly, startDate, new Category("Reference"))
+            .GetNextRenewalDate(DateTime.UtcNow);
+
+        var upcoming = await _client.GetFromJsonAsync<List<UpcomingRenewalResponse>>("/api/Subscriptions/upcoming?withinDays=60");
+
+        var renewal = Assert.Single(upcoming!, r => r.SubscriptionId == subscription.Id);
+        Assert.Equal(expected, renewal.NextRenewalDate);
     }
 }
