@@ -35,14 +35,16 @@ Ofrece una visión centralizada de:
 
 ## 🎯 Objetivos
 
-- [ ] Centralizar todas las suscripciones en una única aplicación.
-- [ ] Controlar los gastos recurrentes por suscripciones.
-- [ ] Monitorizar próximos pagos y fechas de renovación.
-- [ ] Detectar y registrar cambios de precio a lo largo del tiempo.
-- [ ] Organizar las suscripciones por categorías.
-- [ ] Llevar el control del estado de cada suscripción (activa, pausada, cancelada).
-- [ ] Ofrecer una visión clara del gasto mensual y anual.
+- [x] Centralizar todas las suscripciones en una única aplicación.
+- [x] Controlar los gastos recurrentes por suscripciones.
+- [x] Monitorizar próximos pagos y fechas de renovación.
+- [x] Detectar y registrar cambios de precio a lo largo del tiempo.
+- [x] Organizar las suscripciones por categorías.
+- [x] Llevar el control del estado de cada suscripción (activa, pausada, cancelada).
+- [x] Ofrecer una visión clara del gasto mensual y anual.
 - [ ] Mejorar las habilidades de desarrollo backend usando .NET y ASP.NET Core.
+
+> Los primeros siete están marcados desde el lado del backend — cada uno se expone a través de un endpoint REST (ver la [Referencia de la API](../Api/Api.es.md)). El último es un objetivo personal continuo, no una feature que se pueda completar. Nada de esto es todavía usable por una persona — para eso está el frontend.
 
 ---
 
@@ -75,7 +77,7 @@ La primera versión se centra en el dominio esencial necesario para gestionar su
 
 ## 🏗 Arquitectura
 
-Todo se ejecuta en local: la interfaz web habla con la API REST, y la API persiste los datos en una base de datos SQLite local. No interviene ningún servicio en la nube.
+Todo se ejecuta en local: la interfaz web habla con la API REST, y la API persiste los datos en una base de datos SQLite local. No interviene ningún servicio en la nube. Ver [Arquitectura y Ciclo de Vida de una Petición](../Architecture/Architecture.es.md) para cómo viaja realmente una petición por el backend, y de qué es responsable cada fichero.
 
 ```mermaid
 flowchart LR
@@ -98,10 +100,14 @@ SubscriptionManager/
 ├── backend/
 │   ├── src/
 │   │   └── SubscriptionManager.API/
+│   │       ├── Controllers/            # Uno por recurso: Categories, Subscriptions, PriceHistories, Expenses
+│   │       ├── DTO/                    # Records de petición/respuesta que exponen los controllers
 │   │       ├── Domain/
 │   │       │   ├── Entities/           # Category, Subscription, PriceHistory
 │   │       │   └── enum/               # BillingCycle, SubscriptionStatus
 │   │       ├── Infrastructure/
+│   │       │   ├── ArgumentExceptionHandler.cs    # Fallos de validación del dominio -> 400
+│   │       │   ├── DbUpdateExceptionHandler.cs     # Violaciones de restricción de la BD -> 409
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # Configuración Fluent API de EF Core por entidad
 │   │       │       └── SubscriptionManagerDbContext.cs
@@ -126,4 +132,4 @@ Lo siguiente **no** forma parte de la v1.0. Podría considerarse en futuras iter
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-10-31</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-15</sub></p>

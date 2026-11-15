@@ -35,14 +35,16 @@ It provides a centralized overview of:
 
 ## 🎯 Objectives
 
-- [ ] Centralize all subscriptions in a single application.
-- [ ] Track recurring subscription expenses.
-- [ ] Monitor upcoming payments and renewal dates.
-- [ ] Detect and track price changes over time.
-- [ ] Organize subscriptions into categories.
-- [ ] Keep track of subscription status (active, paused, cancelled).
-- [ ] Provide a clear overview of monthly and yearly expenses.
+- [x] Centralize all subscriptions in a single application.
+- [x] Track recurring subscription expenses.
+- [x] Monitor upcoming payments and renewal dates.
+- [x] Detect and track price changes over time.
+- [x] Organize subscriptions into categories.
+- [x] Keep track of subscription status (active, paused, cancelled).
+- [x] Provide a clear overview of monthly and yearly expenses.
 - [ ] Improve backend development skills using .NET and ASP.NET Core.
+
+> The first seven are checked off on the backend side — every one of them is exposed by a REST endpoint (see the [API Reference](../Api/Api.en.md)). The last one is an ongoing personal goal, not a feature to complete. None of this is usable by an actual person yet — that's what the frontend is for.
 
 ---
 
@@ -75,7 +77,7 @@ The first version focuses on the core domain needed to manage subscriptions. The
 
 ## 🏗 Architecture
 
-Everything runs locally: the web interface talks to the REST API, and the API persists data to a local SQLite database. No cloud services are involved.
+Everything runs locally: the web interface talks to the REST API, and the API persists data to a local SQLite database. No cloud services are involved. See [Architecture & Request Lifecycle](../Architecture/Architecture.en.md) for how a request actually travels through the backend, and what each file is responsible for.
 
 ```mermaid
 flowchart LR
@@ -98,10 +100,14 @@ SubscriptionManager/
 ├── backend/
 │   ├── src/
 │   │   └── SubscriptionManager.API/
+│   │       ├── Controllers/            # One per resource: Categories, Subscriptions, PriceHistories, Expenses
+│   │       ├── DTO/                    # Request/response records exposed by the controllers
 │   │       ├── Domain/
 │   │       │   ├── Entities/           # Category, Subscription, PriceHistory
 │   │       │   └── enum/               # BillingCycle, SubscriptionStatus
 │   │       ├── Infrastructure/
+│   │       │   ├── ArgumentExceptionHandler.cs    # Domain guard-clause failures -> 400
+│   │       │   ├── DbUpdateExceptionHandler.cs     # DB constraint violations -> 409
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # EF Core Fluent API per entity
 │   │       │       └── SubscriptionManagerDbContext.cs
@@ -126,4 +132,4 @@ The following are **not** part of v1.0. They may be considered for future iterat
 
 ---
 
-<p align="center"><sub>Last updated: 2026-10-31</sub></p>
+<p align="center"><sub>Last updated: 2026-11-15</sub></p>
