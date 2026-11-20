@@ -2,8 +2,6 @@
 
 [🇬🇧 English](./Features.en.md) | 🇪🇸 **Español**
 
-> Este documento no habla de endpoints, códigos de estado ni tablas de base de datos — eso ya está en el [Changelog](../../CHANGELOG.es.md) y la [Referencia de la API](../Api/Api.es.md), para quien construya la app. Esto es **lo que la app sabe hacer hoy, contado como se lo contarías a alguien que simplemente va a usarla.**
-
 ---
 
 ## ⚠️ Antes de nada: cómo se usa esto hoy

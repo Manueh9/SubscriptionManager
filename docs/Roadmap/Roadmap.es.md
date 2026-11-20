@@ -2,8 +2,6 @@
 
 [🇬🇧 English](./Roadmap.en.md) | 🇪🇸 **Español**
 
-> Qué está planeado a continuación, en orden, y las decisiones ya tomadas sobre cómo construirlo. Este es un **plan vivo**, no un changelog — para un registro versionado y fechado de lo que de verdad se ha publicado, ver [CHANGELOG.es.md](../../CHANGELOG.es.md). En cuanto una fase de aquí se entrega, sus detalles pasan a la documentación permanente (Referencia de la API, Base de Datos, Arquitectura, Testing) y la entrada aquí se recorta a una línea con ✅. Actualiza este fichero cada vez que el plan cambie — que no se quede desactualizado.
-
 ---
 
 ## 📋 Índice
@@ -61,8 +59,6 @@ Todo lo de abajo ya está construido, testeado y documentado — lo mantengo aqu
 **Testing**:
 - [x] 56 tests automatizados (xUnit) repartidos en 8 ficheros: tests de integración a nivel HTTP por controller, más tests unitarios puros para la matemática de fechas de renovación y los manejadores de excepciones.
 - [x] Dos ficheros `.http` para pruebas manuales (el principal, más uno dedicado que cubre a fondo los casos límite de `/upcoming`).
-
-**Documentación**: [Referencia de la API](../Api/Api.es.md), [Base de Datos](../Database/Database.es.md), [Guía de Pruebas](../Testing/Testing.es.md) y [Arquitectura y Ciclo de Vida de una Petición](../Architecture/Architecture.es.md) — todas bilingües, todas verificadas línea a línea contra el código real.
 
 ## 🧩 Fase 1 — Backend: identidad visual de las tarjetas
 

@@ -2,8 +2,6 @@
 
 🇬🇧 **English** | [🇪🇸 Español](./Features.es.md)
 
-> This document isn't about endpoints, status codes, or database tables — that's already in the [Changelog](../../CHANGELOG.md) and the [API Reference](../Api/Api.en.md), for whoever builds the thing. This is **what the app can do today, explained the way you'd explain it to someone who's just going to use it.**
-
 ---
 
 ## ⚠️ Before anything else: how this is actually used today

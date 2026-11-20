@@ -2,8 +2,6 @@
 
 🇬🇧 **English** | [🇪🇸 Español](./Roadmap.es.md)
 
-> What's planned next, in order, and the decisions already made about how to build it. This is a **living plan**, not a changelog — for a versioned, dated record of what's actually shipped, see [CHANGELOG.md](../../CHANGELOG.md). Once a phase here ships, its details move into the permanent docs (API Reference, Database, Architecture, Testing) and the entry here gets trimmed down to a line with a ✅. Update this file whenever the plan changes — don't let it go stale.
-
 ---
 
 ## 📋 Table of Contents
@@ -61,8 +59,6 @@ Everything below is already built, tested and documented — kept here (instead 
 **Testing**:
 - [x] 56 automated tests (xUnit) across 8 files: HTTP-level integration tests per controller, plus pure unit tests for the renewal-date math and the exception handlers.
 - [x] Two `.http` files for manual testing (the main one, plus a dedicated one exhaustively covering `/upcoming`'s edge cases).
-
-**Documentation**: [API Reference](../Api/Api.en.md), [Database](../Database/Database.en.md), [Testing Guide](../Testing/Testing.en.md) and [Architecture & Request Lifecycle](../Architecture/Architecture.en.md) — all bilingual, all cross-checked against the actual code.
 
 ## 🧩 Phase 1 — Backend: Card Visual Identity
 

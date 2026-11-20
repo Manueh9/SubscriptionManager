@@ -49,8 +49,7 @@ First versioned snapshot. This isn't "everything built on this date" — it's th
 
 **Under the hood**
 - ASP.NET Core Web API (.NET 10) + Entity Framework Core + SQLite, entirely local — no cloud dependency, no authentication (by design, see [Project Scope](docs/ProjectScope/ProjectScope.en.md)).
-- 56 automated tests (xUnit), covering every endpoint's happy path and documented edge case, plus the trickier pieces (renewal-date math, the exception handlers) in isolation.
-- Full bilingual documentation: [API Reference](docs/Api/Api.en.md), [Database](docs/Database/Database.en.md), [Testing Guide](docs/Testing/Testing.en.md), [Architecture & Request Lifecycle](docs/Architecture/Architecture.en.md), [Project Scope](docs/ProjectScope/ProjectScope.en.md).
+- 56 automated tests (xUnit) covering each endpoint's documented edge cases, plus the trickier pieces (renewal-date math, the exception handlers) in isolation.
 
 ### Not included yet
 

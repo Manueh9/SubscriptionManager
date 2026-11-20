@@ -4,7 +4,7 @@
 
 > Local-first subscription management application to track recurring payments, manage subscriptions, monitor price changes and visualize monthly and yearly expenses. Runs entirely on your own machine — no cloud infrastructure required.
 
-**New here?** [What the App Actually Does](docs/Features/Features.en.md) explains what it's capable of in plain language, no technical jargon.
+[What the App Actually Does](docs/Features/Features.en.md) details the app's current capabilities in plain language.
 
 ---
 
@@ -21,7 +21,7 @@
 
 **Current version: `0.1.0`** — see the [Changelog](CHANGELOG.md) for exactly what that includes. `1.0.0` is reserved for the first version a person can actually use (see the versioning note at the top of the Changelog).
 
-- ✅ **Backend API** — complete for the MVP scope: `Categories` and `Subscriptions` CRUD, price changes with history (`PriceHistories`), subscription status changes, an upcoming-renewals view, and a monthly/yearly expense summary. See the [API Reference](docs/Api/Api.en.md) for the full endpoint list.
+- ✅ **Backend API** — `Categories` and `Subscriptions` CRUD, price changes with history (`PriceHistories`), subscription status changes, an upcoming-renewals view, and a monthly/yearly expense summary. See the [API Reference](docs/Api/Api.en.md) for the full endpoint list.
 - 🚧 **Frontend** — not started yet. See the [Roadmap](docs/Roadmap/Roadmap.en.md) for what's planned, in order, and the chosen [dashboard design](docs/Design/Dashboard.es.md).
 
 ## ▶️ Getting Started
@@ -32,12 +32,13 @@ Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download).
 ```
 dotnet run
 ```
-The console prints the URL it's listening on (e.g. `http://localhost:5166`). See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endpoints manually.
+The console prints the URL it's listening on (e.g. `http://localhost:5166`).
 
 **Run the automated tests** (from `backend/tests/SubscriptionManager.API.Tests`):
 ```
 dotnet test
 ```
+See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endpoints manually.
 
 ## 📚 Documentation
 
