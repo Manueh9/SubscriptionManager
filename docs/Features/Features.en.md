@@ -1,4 +1,4 @@
-# ✨ What the App Actually Does, Plainly
+# ✨ Application Features
 
 🇬🇧 **English** | [🇪🇸 Español](./Features.es.md)
 

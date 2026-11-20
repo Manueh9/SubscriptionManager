@@ -1,4 +1,4 @@
-# ✨ Qué hace la app, en cristiano
+# ✨ Funcionalidades de la Aplicación
 
 [🇬🇧 English](./Features.en.md) | 🇪🇸 **Español**
 

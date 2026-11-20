@@ -4,7 +4,7 @@
 
 > Local-first subscription management application to track recurring payments, manage subscriptions, monitor price changes and visualize monthly and yearly expenses. Runs entirely on your own machine — no cloud infrastructure required.
 
-[What the App Actually Does](docs/Features/Features.en.md) details the app's current capabilities in plain language.
+[Application Features](docs/Features/Features.en.md) details the app's current capabilities in plain language.
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 🚦 Project Status
 
-**Current version: `0.1.0`** — see the [Changelog](CHANGELOG.md) for exactly what that includes. `1.0.0` is reserved for the first version a person can actually use (see the versioning note at the top of the Changelog).
+**Current version: `0.1.0`** — see the [Changelog](CHANGELOG.md) for exactly what that includes. `1.0.0` is reserved for the first version usable by the user.
 
 - ✅ **Backend API** — `Categories` and `Subscriptions` CRUD, price changes with history (`PriceHistories`), subscription status changes, an upcoming-renewals view, and a monthly/yearly expense summary. See the [API Reference](docs/Api/Api.en.md) for the full endpoint list.
 - 🚧 **Frontend** — not started yet. See the [Roadmap](docs/Roadmap/Roadmap.en.md) for what's planned, in order, and the chosen [dashboard design](docs/Design/Dashboard.es.md).
@@ -44,7 +44,7 @@ See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endp
 
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
-| What the App Actually Does | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
+| Application Features | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
 | Changelog | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |
 | Project Scope | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
 | Roadmap | [English](docs/Roadmap/Roadmap.en.md) | [Español](docs/Roadmap/Roadmap.es.md) |
