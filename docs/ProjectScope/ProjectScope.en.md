@@ -31,6 +31,8 @@ It provides a centralized overview of:
 
 **Local-first** means the entire application — API and data — runs on the user's own machine. There is no external cloud backend, no third-party server, and no account creation required to use the core functionality. The user's financial data never leaves their computer.
 
+> For a plain-language rundown of what's actually usable today (and what isn't yet), see [What the App Actually Does](../Features/Features.en.md) — this document is about scope and planning, that one is about current capabilities.
+
 ---
 
 ## 🎯 Objectives

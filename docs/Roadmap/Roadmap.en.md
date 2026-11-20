@@ -2,7 +2,7 @@
 
 🇬🇧 **English** | [🇪🇸 Español](./Roadmap.es.md)
 
-> What's planned next, in order, and the decisions already made about how to build it. This is a **living plan**, not a changelog: once a phase ships, its details move into the permanent docs (API Reference, Database, Architecture, Testing) and the entry here gets trimmed down to a line with a ✅. Update this file whenever the plan changes — don't let it go stale.
+> What's planned next, in order, and the decisions already made about how to build it. This is a **living plan**, not a changelog — for a versioned, dated record of what's actually shipped, see [CHANGELOG.md](../../CHANGELOG.md). Once a phase here ships, its details move into the permanent docs (API Reference, Database, Architecture, Testing) and the entry here gets trimmed down to a line with a ✅. Update this file whenever the plan changes — don't let it go stale.
 
 ---
 

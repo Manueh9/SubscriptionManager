@@ -4,6 +4,8 @@
 
 > Aplicación local-first para gestionar suscripciones: registrar pagos recurrentes, controlar cambios de precio y visualizar el gasto mensual y anual. Funciona enteramente en tu propia máquina — no necesita ninguna infraestructura en la nube.
 
+**¿Primera vez aquí?** [Qué hace la app, en cristiano](docs/Features/Features.es.md) explica de qué es capaz en lenguaje llano, sin jerga técnica.
+
 ---
 
 ## 🛠 Stack Tecnológico
@@ -16,6 +18,8 @@
 | Testing | xUnit |
 
 ## 🚦 Estado del Proyecto
+
+**Versión actual: `0.1.0`** — ver el [Registro de Cambios](CHANGELOG.es.md) para ver exactamente qué incluye. La `1.0.0` queda reservada para la primera versión que una persona pueda usar de verdad (ver la nota de versionado al principio del Registro de Cambios).
 
 - ✅ **API backend** — completa para el alcance del MVP: CRUD de `Categories` y `Subscriptions`, cambios de precio con histórico (`PriceHistories`), cambios de estado de suscripción, una vista de próximas renovaciones, y un resumen de gasto mensual/anual. Ver la [Referencia de la API](docs/Api/Api.es.md) para la lista completa de endpoints.
 - 🚧 **Frontend** — todavía sin empezar. Ver la [Hoja de Ruta](docs/Roadmap/Roadmap.es.md) para lo que está planeado, en orden, y el [diseño del dashboard](docs/Design/Dashboard.es.md) ya elegido.
@@ -39,6 +43,8 @@ dotnet test
 
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
+| Qué hace la app, en cristiano | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
+| Registro de Cambios | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |
 | Alcance del Proyecto | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
 | Hoja de Ruta | [English](docs/Roadmap/Roadmap.en.md) | [Español](docs/Roadmap/Roadmap.es.md) |
 | Arquitectura y Ciclo de Vida de una Petición | [English](docs/Architecture/Architecture.en.md) | [Español](docs/Architecture/Architecture.es.md) |

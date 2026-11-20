@@ -2,7 +2,7 @@
 
 [🇬🇧 English](./Roadmap.en.md) | 🇪🇸 **Español**
 
-> Qué está planeado a continuación, en orden, y las decisiones ya tomadas sobre cómo construirlo. Este es un **plan vivo**, no un changelog: en cuanto una fase se entrega, sus detalles pasan a la documentación permanente (Referencia de la API, Base de Datos, Arquitectura, Testing) y la entrada aquí se recorta a una línea con ✅. Actualiza este fichero cada vez que el plan cambie — que no se quede desactualizado.
+> Qué está planeado a continuación, en orden, y las decisiones ya tomadas sobre cómo construirlo. Este es un **plan vivo**, no un changelog — para un registro versionado y fechado de lo que de verdad se ha publicado, ver [CHANGELOG.es.md](../../CHANGELOG.es.md). En cuanto una fase de aquí se entrega, sus detalles pasan a la documentación permanente (Referencia de la API, Base de Datos, Arquitectura, Testing) y la entrada aquí se recorta a una línea con ✅. Actualiza este fichero cada vez que el plan cambie — que no se quede desactualizado.
 
 ---
 
