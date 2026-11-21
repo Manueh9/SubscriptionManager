@@ -55,3 +55,15 @@ Ver la [Guía de Pruebas](docs/Testing/Testing.es.md) para probar los endpoints 
 | Referencia de la API | [English](docs/Api/Api.en.md) | [Español](docs/Api/Api.es.md) |
 | Guía de Pruebas | [English](docs/Testing/Testing.en.md) | [Español](docs/Testing/Testing.es.md) |
 | Diseño — Dashboard | — | [Español](docs/Design/Dashboard.es.md) |
+
+## 📜 Licencia
+
+Subscription Manager es software libre: puedes usarlo, estudiarlo, modificarlo y redistribuirlo bajo los términos de la GNU Affero General Public License v3.0 o posterior (AGPL-3.0-or-later). Consulta el fichero [LICENSE](LICENSE).
+
+Si modificas la aplicación y la ofreces a otras personas a través de una red, la AGPL te obliga a poner a su disposición el código fuente de tu versión.
+
+Las contribuciones requieren aceptar el [acuerdo de contribución](CLA.md). Consulta [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Si necesitas usar Subscription Manager en condiciones distintas de la AGPL, escribe a manuel.garcia.rodriguez.010@gmail.com.
+
+Copyright (C) 2026 Manuel Garcia Rodriguez

@@ -55,3 +55,15 @@ See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endp
 | API Reference | [English](docs/Api/Api.en.md) | [Español](docs/Api/Api.es.md) |
 | Testing Guide | [English](docs/Testing/Testing.en.md) | [Español](docs/Testing/Testing.es.md) |
 | Design — Dashboard | — | [Español](docs/Design/Dashboard.es.md) |
+
+## 📜 License
+
+Subscription Manager is free software: you can use, study, modify and redistribute it under the terms of the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See the [LICENSE](LICENSE) file.
+
+If you modify the application and make it available to others over a network, the AGPL requires you to make the source code of your version available to them.
+
+Contributions require accepting the [Contributor License Agreement](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+If you need to use Subscription Manager under terms other than the AGPL, write to manuel.garcia.rodriguez.010@gmail.com.
+
+Copyright (C) 2026 Manuel Garcia Rodriguez
