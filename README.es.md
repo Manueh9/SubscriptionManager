@@ -45,6 +45,8 @@ Ver la [Guía de Pruebas](docs/Testing/Testing.es.md) para probar los endpoints 
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
 | Funcionalidades de la Aplicación | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
+| Especificación de la V1 | — | [Español](docs/Specification/SpecificationV1.es.md) |
+| Funcionalidades de la V1 (Resumen) | [English](docs/Features/FeaturesV1.en.md) | [Español](docs/Features/FeaturesV1.es.md) |
 | Registro de Cambios | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |
 | Alcance del Proyecto | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
 | Hoja de Ruta | [English](docs/Roadmap/Roadmap.en.md) | [Español](docs/Roadmap/Roadmap.es.md) |

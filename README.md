@@ -45,6 +45,8 @@ See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endp
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
 | Application Features | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
+| V1 Specification | — | [Español](docs/Specification/SpecificationV1.es.md) |
+| V1 Features (Summary) | [English](docs/Features/FeaturesV1.en.md) | [Español](docs/Features/FeaturesV1.es.md) |
 | Changelog | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |
 | Project Scope | [English](docs/ProjectScope/ProjectScope.en.md) | [Español](docs/ProjectScope/ProjectScope.es.md) |
 | Roadmap | [English](docs/Roadmap/Roadmap.en.md) | [Español](docs/Roadmap/Roadmap.es.md) |
