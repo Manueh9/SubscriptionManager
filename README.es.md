@@ -46,6 +46,7 @@ Ver la [Guía de Pruebas](docs/Testing/Testing.es.md) para probar los endpoints 
 |---|---|---|
 | Funcionalidades de la Aplicación | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
 | Conceptos y Funcionamiento Interno | [English](docs/Concepts/Concepts.en.md) | [Español](docs/Concepts/Concepts.es.md) |
+| Guía de Código (línea a línea) | — | [Español](docs/CodeGuide/CodeGuide.es.md) |
 | Especificación de la V1 | — | [Español](docs/Specification/SpecificationV1.es.md) |
 | Funcionalidades de la V1 (Resumen) | [English](docs/Features/FeaturesV1.en.md) | [Español](docs/Features/FeaturesV1.es.md) |
 | Registro de Cambios | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |
