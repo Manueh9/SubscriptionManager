@@ -42,7 +42,7 @@
 
 - [x] `LICENSE` (AGPL-3.0), `CLA.md`, `CONTRIBUTING.md` en la raíz; sección de licencia en el README; `THIRD-PARTY-NOTICES.md`.
 - [x] Cabecera SPDX (`SPDX-License-Identifier` + `Copyright`) en los 42 ficheros `.cs` existentes.
-- [ ] Ubicación configurable de la base de datos (`%AppData%/SubscriptionManager/data.db`) + copia automática antes de cada migración (conservando las 10 más recientes).
+- [x] Ubicación configurable de la base de datos (`%AppData%/SubscriptionManager/data.db`) + copia automática antes de cada migración (conservando las 10 más recientes). Las migraciones pendientes se aplican solas al arrancar.
 - [ ] Escuchar solo en `127.0.0.1`, validar la cabecera `Host`, CORS solo en desarrollo, límite de subida de 10 MB.
 - [ ] `TimeProvider` inyectado en todo lo que dependa de "hoy"; mensajes de `ProblemDetails` en español.
 

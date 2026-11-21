@@ -18,9 +18,11 @@
 
 ## 🔎 Overview
 
-The database is a single local **SQLite** file (`subscriptionmanager.db`), managed entirely through **EF Core migrations** — the schema is never edited by hand, it's generated from the C# entities in `Domain/Entities/` plus the Fluent API configurations in `Infrastructure/Persistence/Configurations/`.
+The database is a single local **SQLite** file (`data.db`), managed entirely through **EF Core migrations** — the schema is never edited by hand, it's generated from the C# entities in `Domain/Entities/` plus the Fluent API configurations in `Infrastructure/Persistence/Configurations/`.
 
 Three tables currently exist: `Categories`, `Subscriptions` and `PriceHistories`.
+
+**Location and backups**: by default, the file lives in the user's application data folder (`%AppData%/SubscriptionManager/data.db` on Windows; `~/Library/Application Support/SubscriptionManager/data.db` on macOS) — configurable via `ConnectionStrings:DefaultConnection` in `appsettings.json` if a different path is needed. On startup, if a migration is pending and the file already exists, it's first copied to a `backups/` folder next to it (timestamped), keeping only the 10 most recent copies, before the migrations are applied (`DatabaseMigrationService`).
 
 ---
 

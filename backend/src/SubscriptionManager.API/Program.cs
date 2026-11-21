@@ -15,8 +15,13 @@ builder.Services.AddExceptionHandler<ArgumentExceptionHandler>();
 builder.Services.AddExceptionHandler<DbUpdateExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Services.AddSingleton(TimeProvider.System);
+
+var connectionString = DatabaseConnectionStringProvider.Resolve(
+    builder.Configuration.GetConnectionString("DefaultConnection"));
+
 builder.Services.AddDbContext<SubscriptionManagerDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(connectionString));
 
 var app = builder.Build();
 
@@ -31,5 +36,15 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.MapControllers();
+
+// The Testing environment swaps in its own in-memory database, created directly via
+// EnsureCreated() — applying migrations here as well would race against that setup.
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<SubscriptionManagerDbContext>();
+    var timeProvider = scope.ServiceProvider.GetRequiredService<TimeProvider>();
+    DatabaseMigrationService.ApplyPendingMigrations(dbContext, connectionString, timeProvider);
+}
 
 app.Run();

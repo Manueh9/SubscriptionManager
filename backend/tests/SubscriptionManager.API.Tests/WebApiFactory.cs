@@ -24,6 +24,8 @@ public class WebApiFactory : WebApplicationFactory<Program>
     {
         _connection.Open();
 
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<DbContextOptions<SubscriptionManagerDbContext>>();

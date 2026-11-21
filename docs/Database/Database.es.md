@@ -18,9 +18,11 @@
 
 ## 🔎 Visión general
 
-La base de datos es un único fichero local **SQLite** (`subscriptionmanager.db`), gestionado íntegramente mediante **migraciones de EF Core** — el esquema nunca se edita a mano, se genera a partir de las entidades C# de `Domain/Entities/` y las configuraciones Fluent API de `Infrastructure/Persistence/Configurations/`.
+La base de datos es un único fichero local **SQLite** (`data.db`), gestionado íntegramente mediante **migraciones de EF Core** — el esquema nunca se edita a mano, se genera a partir de las entidades C# de `Domain/Entities/` y las configuraciones Fluent API de `Infrastructure/Persistence/Configurations/`.
 
 Actualmente existen tres tablas: `Categories`, `Subscriptions` y `PriceHistories`.
+
+**Ubicación y copias de seguridad**: por defecto, el fichero vive en la carpeta de datos de aplicación del usuario (`%AppData%/SubscriptionManager/data.db` en Windows; `~/Library/Application Support/SubscriptionManager/data.db` en macOS) — configurable con `ConnectionStrings:DefaultConnection` en `appsettings.json` si se necesita otra ruta. Al arrancar, si hay migraciones pendientes y el fichero ya existe, se copia primero a una carpeta `backups/` junto a él (con marca de tiempo en el nombre), conservando solo las 10 copias más recientes, y después se aplican las migraciones (`DatabaseMigrationService`).
 
 ---
 

@@ -20,18 +20,21 @@ Everything starts in `Program.cs`, which runs top to bottom as a sequence of sta
 
 ```mermaid
 flowchart TD
-    A["WebApplication.CreateBuilder(args)<br/>reads appsettings.json / appsettings.Development.json<br/>and launchSettings.json"] --> B["Register services in the DI container:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;"]
+    A["WebApplication.CreateBuilder(args)<br/>reads appsettings.json / appsettings.Development.json<br/>and launchSettings.json"] --> B["Register services in the DI container:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(path resolved by DatabaseConnectionStringProvider)"]
     B --> C["builder.Build()<br/>constructs the app and its DI container"]
     C --> D["Build the middleware pipeline, in order:<br/>UseExceptionHandler<br/>MapOpenApi (Development only)<br/>UseHttpsRedirection<br/>MapControllers"]
-    D --> E["app.Run()<br/>Kestrel starts listening on the configured URL<br/>(e.g. http://localhost:5166, from launchSettings.json)"]
+    D --> G{"Environment == Testing?"}
+    G -- "No (real app)" --> H["DatabaseMigrationService.ApplyPendingMigrations:<br/>if a migration is pending and the .db already exists,<br/>back it up to backups/ (keep 10) then migrate"]
+    G -- "Yes (tests' WebApiFactory)" --> E
+    H --> E["app.Run()<br/>Kestrel starts listening on the configured URL<br/>(e.g. http://localhost:5166, from launchSettings.json)"]
     E --> F(["Process blocks here,<br/>handling requests until stopped (Ctrl+C)"])
 ```
 
 A few things worth calling out:
 
 - **Order matters.** `UseExceptionHandler()` is registered *before* `MapControllers()`, so it wraps every controller action in a try/catch at the middleware level — any unhandled exception thrown inside an action is caught here before it would otherwise crash the request. See [Request Lifecycle](#-request-lifecycle) below.
-- **`AddDbContext` doesn't touch the database at startup.** It only registers *how* to create a `SubscriptionManagerDbContext` (pointing at the SQLite file named in `appsettings.json`'s `ConnectionStrings:DefaultConnection`) — a connection is actually opened lazily, the first time a request uses it.
-- **No manual schema setup.** The SQLite file's schema comes entirely from the EF Core migrations in `Migrations/`, applied ahead of time via `dotnet ef database update` (see the [Testing Guide](../Testing/Testing.en.md)) — `Program.cs` never calls anything like `EnsureCreated()` against the real database.
+- **`AddDbContext` itself doesn't touch the database.** It only registers *how* to create a `SubscriptionManagerDbContext` — the default path (`%AppData%/SubscriptionManager/data.db`, or whatever's in `ConnectionStrings:DefaultConnection`) is computed beforehand, in `DatabaseConnectionStringProvider`, but the connection itself is still opened lazily, the first time something uses it.
+- **The schema migrates itself on startup, except in tests.** `Program.cs` calls `DatabaseMigrationService.ApplyPendingMigrations` right before `app.Run()` — if a migration is pending, it backs up the existing `.db` file (if any) before applying it. This is skipped entirely when the environment is `"Testing"` (set by `WebApiFactory`), since the in-memory test database is created a different way, via `EnsureCreated()` — see [Database](../Database/Database.en.md) for the location and backup details.
 
 ---
 
@@ -85,7 +88,7 @@ One paragraph per file (or tightly related group of files), organized the same w
 
 ### `Program.cs`
 
-Composes the application: registers services (controllers, OpenAPI, the two exception handlers, the `DbContext`) and builds the middleware pipeline, then starts listening. See [Startup Sequence](#-startup-sequence) above — this is the only file in the project that runs unconditionally at process start.
+Composes the application: registers services (controllers, OpenAPI, the two exception handlers, a `TimeProvider`, the `DbContext`), builds the middleware pipeline, applies any pending migration (except in the `"Testing"` environment), then starts listening. See [Startup Sequence](#-startup-sequence) above — this is the only file in the project that runs unconditionally at process start.
 
 ### `Controllers/`
 
@@ -126,14 +129,22 @@ The EF Core `DbContext` — exposes the three `DbSet`s and wires up the Fluent A
 
 Two small extension-method helpers shared between the controllers and `DbUpdateExceptionHandler`, so "what counts as a real database conflict" is defined exactly once: `IsConstraintViolation()` inspects a `DbUpdateException`'s inner `SqliteException` for error code `19` (`SQLITE_CONSTRAINT`); `TrySaveChangesAsync()` wraps `SaveChangesAsync()` in a `catch` filtered by that same check, returning `false` only on a genuine constraint violation — anything else isn't caught at all, so it propagates up to `DbUpdateExceptionHandler`, which also won't claim it, ending in a genuine `500`.
 
+### `Infrastructure/Persistence/DatabaseConnectionStringProvider.cs`
+
+Computes the connection string `Program.cs` uses to register the `DbContext`: if `ConnectionStrings:DefaultConnection` is empty in `appsettings.json`, it builds the default path under the user's application data folder (`%AppData%/SubscriptionManager/data.db`) and creates the directory if needed; if a value is configured, it's returned as-is, untouched.
+
+### `Infrastructure/Persistence/DatabaseMigrationService.cs`
+
+Called by `Program.cs` right before `app.Run()` (except in the `"Testing"` environment). If `context.Database.GetPendingMigrations()` isn't empty, it copies the existing `.db` file into a `backups/` folder next to it (timestamped, using the injected `TimeProvider`) before applying the migrations, and deletes any backup beyond the 10 most recent. If the `.db` file doesn't exist yet (first run) or nothing is pending, it skips the backup — it either just migrates, or does nothing at all.
+
 ### `Infrastructure/Persistence/Configurations/*.cs`
 
 One `IEntityTypeConfiguration<T>` per entity — the Fluent API equivalent of data annotations, used instead of attributes so `Domain/Entities/` stays free of persistence concerns. This is where column lengths, the `NOCASE` collation behind case-insensitive uniqueness, the unique indexes, decimal precision, and the two `OnDelete` behaviors (`RESTRICT` for `Category → Subscription`, `CASCADE` for `Subscription → PriceHistory`) are all declared — see [Database: Relationships](../Database/Database.en.md#-relationships) for why each one was chosen.
 
 ### `Migrations/`
 
-Generated by `dotnet ef migrations add` — never hand-edited. Each pair of `*.cs`/`*.Designer.cs` files is one schema change applied in order by `dotnet ef database update`; `SubscriptionManagerDbContextModelSnapshot.cs` is EF Core's record of the resulting schema, used to compute the next migration's diff.
+Generated by `dotnet ef migrations add` — never hand-edited. Each pair of `*.cs`/`*.Designer.cs` files is one schema change; they apply themselves when the real app starts, via `DatabaseMigrationService` (above) — `dotnet ef database update` is no longer needed by hand unless you want to apply them without starting the API. `SubscriptionManagerDbContextModelSnapshot.cs` is EF Core's record of the resulting schema, used to compute the next migration's diff.
 
 ---
 
-<p align="center"><sub>Last updated: 2026-11-15</sub></p>
+<p align="center"><sub>Last updated: 2026-11-21</sub></p>

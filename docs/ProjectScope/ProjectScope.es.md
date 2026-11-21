@@ -108,7 +108,9 @@ SubscriptionManager/
 │   │       │   ├── DbUpdateExceptionHandler.cs     # Violaciones de restricción de la BD -> 409
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # Configuración Fluent API de EF Core por entidad
-│   │       │       └── SubscriptionManagerDbContext.cs
+│   │       │       ├── SubscriptionManagerDbContext.cs
+│   │       │       ├── DatabaseConnectionStringProvider.cs # Ruta de la BD (%AppData%/... por defecto)
+│   │       │       └── DatabaseMigrationService.cs # Copia de seguridad + migración al arrancar
 │   │       ├── Migrations/             # Migraciones de EF Core (historial del esquema SQLite)
 │   │       └── Program.cs
 │   └── tests/                          # Proyecto(s) de tests con xUnit

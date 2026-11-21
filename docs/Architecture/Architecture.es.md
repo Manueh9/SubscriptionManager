@@ -20,18 +20,21 @@ Todo empieza en `Program.cs`, que se ejecuta de arriba a abajo como una secuenci
 
 ```mermaid
 flowchart TD
-    A["WebApplication.CreateBuilder(args)<br/>lee appsettings.json / appsettings.Development.json<br/>y launchSettings.json"] --> B["Registra servicios en el contenedor de DI:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;"]
+    A["WebApplication.CreateBuilder(args)<br/>lee appsettings.json / appsettings.Development.json<br/>y launchSettings.json"] --> B["Registra servicios en el contenedor de DI:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(ruta resuelta por DatabaseConnectionStringProvider)"]
     B --> C["builder.Build()<br/>construye la app y su contenedor de DI"]
     C --> D["Construye el pipeline de middleware, en orden:<br/>UseExceptionHandler<br/>MapOpenApi (solo en Development)<br/>UseHttpsRedirection<br/>MapControllers"]
-    D --> E["app.Run()<br/>Kestrel empieza a escuchar en la URL configurada<br/>(p. ej. http://localhost:5166, desde launchSettings.json)"]
+    D --> G{"¿Entorno == Testing?"}
+    G -- "No (app real)" --> H["DatabaseMigrationService.ApplyPendingMigrations:<br/>si hay migración pendiente y el .db ya existe,<br/>copia a backups/ (conserva 10) y migra"]
+    G -- "Sí (WebApiFactory de los tests)" --> E
+    H --> E["app.Run()<br/>Kestrel empieza a escuchar en la URL configurada<br/>(p. ej. http://localhost:5166, desde launchSettings.json)"]
     E --> F(["El proceso se queda aquí,<br/>gestionando peticiones hasta que se detiene (Ctrl+C)"])
 ```
 
 Un par de cosas que merece la pena resaltar:
 
 - **El orden importa.** `UseExceptionHandler()` se registra *antes* que `MapControllers()`, así que envuelve cada acción del controller en un try/catch a nivel de middleware — cualquier excepción sin capturar lanzada dentro de una acción se atrapa aquí antes de que, si no, tumbara la petición. Ver [Ciclo de vida de una petición](#-ciclo-de-vida-de-una-petición) más abajo.
-- **`AddDbContext` no toca la base de datos al arrancar.** Solo registra *cómo* crear un `SubscriptionManagerDbContext` (apuntando al fichero SQLite nombrado en `ConnectionStrings:DefaultConnection` de `appsettings.json`) — la conexión se abre de forma perezosa, la primera vez que una petición la usa.
-- **Sin configuración manual del esquema.** El esquema del fichero SQLite viene por completo de las migraciones de EF Core en `Migrations/`, aplicadas por adelantado vía `dotnet ef database update` (ver la [Guía de Pruebas](../Testing/Testing.es.md)) — `Program.cs` nunca llama a nada como `EnsureCreated()` contra la base de datos real.
+- **`AddDbContext` en sí no toca la base de datos.** Solo registra *cómo* crear un `SubscriptionManagerDbContext` — la ruta por defecto (`%AppData%/SubscriptionManager/data.db`, o la que haya en `ConnectionStrings:DefaultConnection`) se calcula antes, en `DatabaseConnectionStringProvider`, pero la conexión en sí se abre de forma perezosa, la primera vez que algo la usa.
+- **El esquema se migra solo al arrancar, salvo en los tests.** `Program.cs` llama a `DatabaseMigrationService.ApplyPendingMigrations` justo antes de `app.Run()` — si hay una migración pendiente, hace copia de seguridad del `.db` existente (si lo hay) antes de aplicarla. Esto se salta por completo cuando el entorno es `"Testing"` (lo marca `WebApiFactory`), porque ahí la base de datos en memoria se crea de otra forma, vía `EnsureCreated()` — ver [Base de Datos](../Database/Database.es.md) para el detalle de la ubicación y las copias de seguridad.
 
 ---
 
@@ -85,7 +88,7 @@ Un párrafo por fichero (o por grupo de ficheros muy relacionados), organizados 
 
 ### `Program.cs`
 
-Compone la aplicación: registra servicios (controllers, OpenAPI, los dos manejadores de excepciones, el `DbContext`) y construye el pipeline de middleware, luego empieza a escuchar. Ver [Secuencia de arranque](#-secuencia-de-arranque) arriba — es el único fichero del proyecto que se ejecuta incondicionalmente al arrancar el proceso.
+Compone la aplicación: registra servicios (controllers, OpenAPI, los dos manejadores de excepciones, un `TimeProvider`, el `DbContext`), construye el pipeline de middleware, aplica las migraciones pendientes (salvo en el entorno `"Testing"`) y luego empieza a escuchar. Ver [Secuencia de arranque](#-secuencia-de-arranque) arriba — es el único fichero del proyecto que se ejecuta incondicionalmente al arrancar el proceso.
 
 ### `Controllers/`
 
@@ -126,14 +129,22 @@ El `DbContext` de EF Core — expone los tres `DbSet` y conecta las configuracio
 
 Dos pequeños helpers de métodos de extensión compartidos entre los controllers y `DbUpdateExceptionHandler`, así que "qué cuenta como un conflicto real de base de datos" se define exactamente una vez: `IsConstraintViolation()` inspecciona la `SqliteException` interna de una `DbUpdateException` buscando el código de error `19` (`SQLITE_CONSTRAINT`); `TrySaveChangesAsync()` envuelve `SaveChangesAsync()` en un `catch` filtrado por esa misma comprobación, devolviendo `false` solo ante una violación de restricción genuina — cualquier otra cosa no se captura en absoluto, así que se propaga hasta `DbUpdateExceptionHandler`, que tampoco la reclamará, terminando en un `500` genuino.
 
+### `Infrastructure/Persistence/DatabaseConnectionStringProvider.cs`
+
+Calcula la cadena de conexión que usa `Program.cs` al registrar el `DbContext`: si `ConnectionStrings:DefaultConnection` está vacío en `appsettings.json`, construye la ruta por defecto bajo la carpeta de datos del usuario (`%AppData%/SubscriptionManager/data.db`) y crea el directorio si no existe; si hay un valor configurado, lo respeta tal cual, sin tocarlo.
+
+### `Infrastructure/Persistence/DatabaseMigrationService.cs`
+
+Invocado por `Program.cs` justo antes de `app.Run()` (salvo en el entorno `"Testing"`). Si `context.Database.GetPendingMigrations()` no está vacío, copia el fichero `.db` existente a una carpeta `backups/` junto a él (con marca de tiempo en el nombre, usando el `TimeProvider` inyectado) antes de aplicar las migraciones, y borra las copias más allá de las 10 más recientes. Si el fichero `.db` todavía no existe (primer arranque) o no hay ninguna migración pendiente, no hace copia — solo migra, o no hace nada.
+
 ### `Infrastructure/Persistence/Configurations/*.cs`
 
 Un `IEntityTypeConfiguration<T>` por entidad — el equivalente de Fluent API a las data annotations, usado en vez de atributos para que `Domain/Entities/` se mantenga libre de preocupaciones de persistencia. Aquí es donde se declaran las longitudes de columna, la colación `NOCASE` detrás de la unicidad sin distinguir mayúsculas, los índices únicos, la precisión decimal, y los dos comportamientos `OnDelete` (`RESTRICT` para `Category → Subscription`, `CASCADE` para `Subscription → PriceHistory`) — ver [Base de Datos: Relaciones](../Database/Database.es.md#-relaciones) para por qué se elegió cada uno.
 
 ### `Migrations/`
 
-Generados por `dotnet ef migrations add` — nunca editados a mano. Cada par de ficheros `*.cs`/`*.Designer.cs` es un cambio de esquema aplicado en orden por `dotnet ef database update`; `SubscriptionManagerDbContextModelSnapshot.cs` es el registro de EF Core del esquema resultante, usado para calcular el diff de la siguiente migración.
+Generados por `dotnet ef migrations add` — nunca editados a mano. Cada par de ficheros `*.cs`/`*.Designer.cs` es un cambio de esquema; se aplican solos al arrancar la app de verdad, vía `DatabaseMigrationService` (ver arriba) — ya no hace falta `dotnet ef database update` a mano salvo que quieras aplicarlas sin arrancar la API. `SubscriptionManagerDbContextModelSnapshot.cs` es el registro de EF Core del esquema resultante, usado para calcular el diff de la siguiente migración.
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-15</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-21</sub></p>

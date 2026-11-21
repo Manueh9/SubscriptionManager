@@ -108,7 +108,9 @@ SubscriptionManager/
 │   │       │   ├── DbUpdateExceptionHandler.cs     # DB constraint violations -> 409
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # EF Core Fluent API per entity
-│   │       │       └── SubscriptionManagerDbContext.cs
+│   │       │       ├── SubscriptionManagerDbContext.cs
+│   │       │       ├── DatabaseConnectionStringProvider.cs # DB path (%AppData%/... by default)
+│   │       │       └── DatabaseMigrationService.cs # Backup + migrate on startup
 │   │       ├── Migrations/             # EF Core migrations (SQLite schema history)
 │   │       └── Program.cs
 │   └── tests/                          # xUnit test project(s)
