@@ -75,8 +75,11 @@ Some of the test files skip HTTP entirely, because what they cover is better tes
 - `DbUpdateExceptionHandlerTests` calls the handler directly with a crafted `DbUpdateException`, confirming it claims a real `SQLITE_CONSTRAINT` violation (`409`) but leaves a transient error like a locked database unhandled (so it still surfaces as `500`) — a distinction that isn't practical to trigger through a single manual HTTP request.
 - `TrySaveChangesTests` exercises the controllers' shared save helper against a real in-memory SQLite database (no HTTP), so it also verifies the assumption the helper rests on: that SQLite really does report a duplicate name, a case-insensitive duplicate, and a `RESTRICT` delete as constraint violations. It deliberately uses a fresh `DbContext` per operation, mirroring the real per-request lifetime — sharing one context would let EF's change tracker pre-empt the `RESTRICT` with its own exception before SQLite ever sees the delete.
 - `DatabaseMigrationServiceTests` freezes a real database (in a temp folder) on the first migration only, to confirm that starting up with a pending migration backs up the file before migrating and keeps only the 10 most recent backups — and that nothing happens when no migration is pending.
+- `StartupSecurityTests` calls `StartupSecurity.EnsureLoopbackOnly` directly with various URLs, confirming it accepts `localhost`/`127.0.0.1`/`::1` and rejects anything else (`0.0.0.0`, a network IP, `*`, `+`).
 
 `UpcomingRenewalsEndpointsTests` still includes one HTTP-level regression test for the day-31 case, confirming the controller wires the (separately, exhaustively tested) domain calculation through correctly end-to-end.
+
+`HostFilteringTests` is deliberately HTTP-level: it checks that a real request with `Host: evil.example` gets `400` before reaching any controller, and that one with `Host: localhost` still works normally.
 
 `ExpensesEndpointsTests` and `UpcomingRenewalsEndpointsTests` give each test its own `WebApiFactory` (and therefore its own empty database) instead of sharing one via `IClassFixture`, since both endpoints aggregate across every subscription in the database and would otherwise see data left behind by sibling tests.
 
@@ -112,4 +115,4 @@ This mirrors the flow already verified while building the API — a good order t
 
 ---
 
-<p align="center"><sub>Last updated: 2026-11-15</sub></p>
+<p align="center"><sub>Last updated: 2026-11-21</sub></p>

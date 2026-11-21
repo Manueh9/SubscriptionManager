@@ -7,6 +7,11 @@ using SubscriptionManager.API.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10 MB upload limit.
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -25,6 +30,11 @@ builder.Services.AddDbContext<SubscriptionManagerDbContext>(options =>
 
 var app = builder.Build();
 
+// This API has no authentication, so it must never be reachable from the network —
+// fail fast at startup instead of silently listening somewhere it shouldn't.
+StartupSecurity.EnsureLoopbackOnly(app.Urls);
+
+app.UseHostFiltering();
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.

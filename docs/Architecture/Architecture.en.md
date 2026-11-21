@@ -20,9 +20,11 @@ Everything starts in `Program.cs`, which runs top to bottom as a sequence of sta
 
 ```mermaid
 flowchart TD
-    A["WebApplication.CreateBuilder(args)<br/>reads appsettings.json / appsettings.Development.json<br/>and launchSettings.json"] --> B["Register services in the DI container:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(path resolved by DatabaseConnectionStringProvider)"]
+    A["WebApplication.CreateBuilder(args)<br/>reads appsettings.json / appsettings.Development.json<br/>and launchSettings.json"] --> K["builder.WebHost.ConfigureKestrel:<br/>MaxRequestBodySize = 10 MB"]
+    K --> B["Register services in the DI container:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(path resolved by DatabaseConnectionStringProvider)"]
     B --> C["builder.Build()<br/>constructs the app and its DI container"]
-    C --> D["Build the middleware pipeline, in order:<br/>UseExceptionHandler<br/>MapOpenApi (Development only)<br/>UseHttpsRedirection<br/>MapControllers"]
+    C --> S["StartupSecurity.EnsureLoopbackOnly(app.Urls)<br/>throws and refuses to start<br/>if any URL isn't localhost/127.0.0.1/::1"]
+    S --> D["Build the middleware pipeline, in order:<br/>UseHostFiltering (AllowedHosts: localhost;127.0.0.1;[::1])<br/>UseExceptionHandler<br/>MapOpenApi (Development only)<br/>UseHttpsRedirection<br/>MapControllers"]
     D --> G{"Environment == Testing?"}
     G -- "No (real app)" --> H["DatabaseMigrationService.ApplyPendingMigrations:<br/>if a migration is pending and the .db already exists,<br/>back it up to backups/ (keep 10) then migrate"]
     G -- "Yes (tests' WebApiFactory)" --> E
@@ -32,9 +34,10 @@ flowchart TD
 
 A few things worth calling out:
 
-- **Order matters.** `UseExceptionHandler()` is registered *before* `MapControllers()`, so it wraps every controller action in a try/catch at the middleware level — any unhandled exception thrown inside an action is caught here before it would otherwise crash the request. See [Request Lifecycle](#-request-lifecycle) below.
+- **Order matters.** `UseHostFiltering()` is the very first middleware of all — a request with a disallowed `Host` header gets rejected before anything else touches it. `UseExceptionHandler()` comes right after, wrapping every controller action in a try/catch at the middleware level — any unhandled exception thrown inside an action is caught here before it would otherwise crash the request. See [Request Lifecycle](#-request-lifecycle) below.
 - **`AddDbContext` itself doesn't touch the database.** It only registers *how* to create a `SubscriptionManagerDbContext` — the default path (`%AppData%/SubscriptionManager/data.db`, or whatever's in `ConnectionStrings:DefaultConnection`) is computed beforehand, in `DatabaseConnectionStringProvider`, but the connection itself is still opened lazily, the first time something uses it.
 - **The schema migrates itself on startup, except in tests.** `Program.cs` calls `DatabaseMigrationService.ApplyPendingMigrations` right before `app.Run()` — if a migration is pending, it backs up the existing `.db` file (if any) before applying it. This is skipped entirely when the environment is `"Testing"` (set by `WebApiFactory`), since the in-memory test database is created a different way, via `EnsureCreated()` — see [Database](../Database/Database.en.md) for the location and backup details.
+- **This API has no authentication**, so two layers guard it from ever being reachable over the network: `StartupSecurity.EnsureLoopbackOnly` refuses to start if it's configured to listen on anything but loopback, and `UseHostFiltering()` (via the `AllowedHosts` key in `appsettings.json`) rejects with `400` any request whose `Host` header isn't `localhost`/`127.0.0.1`/`::1` — the standard defense against DNS-rebinding attacks from a browser tab.
 
 ---
 
@@ -88,7 +91,11 @@ One paragraph per file (or tightly related group of files), organized the same w
 
 ### `Program.cs`
 
-Composes the application: registers services (controllers, OpenAPI, the two exception handlers, a `TimeProvider`, the `DbContext`), builds the middleware pipeline, applies any pending migration (except in the `"Testing"` environment), then starts listening. See [Startup Sequence](#-startup-sequence) above — this is the only file in the project that runs unconditionally at process start.
+Composes the application: configures Kestrel's upload limit, registers services (controllers, OpenAPI, the two exception handlers, a `TimeProvider`, the `DbContext`), checks it's only going to listen on loopback, builds the middleware pipeline, applies any pending migration (except in the `"Testing"` environment), then starts listening. See [Startup Sequence](#-startup-sequence) above — this is the only file in the project that runs unconditionally at process start.
+
+### `Infrastructure/StartupSecurity.cs`
+
+A single method, `EnsureLoopbackOnly`, called from `Program.cs` right after `builder.Build()`. It walks the configured URLs (`app.Urls`) and throws — preventing the app from starting — if any of them isn't `localhost`, `127.0.0.1`, or `::1`. This is the in-code guarantee that this unauthenticated API never accidentally listens on `0.0.0.0` or a real network IP.
 
 ### `Controllers/`
 

@@ -45,6 +45,7 @@ See the [Testing Guide](docs/Testing/Testing.en.md) for how to exercise the endp
 | Doc | 🇬🇧 English | 🇪🇸 Español |
 |---|---|---|
 | Application Features | [English](docs/Features/Features.en.md) | [Español](docs/Features/Features.es.md) |
+| Concepts & How It Works | [English](docs/Concepts/Concepts.en.md) | [Español](docs/Concepts/Concepts.es.md) |
 | V1 Specification | — | [Español](docs/Specification/SpecificationV1.es.md) |
 | V1 Features (Summary) | [English](docs/Features/FeaturesV1.en.md) | [Español](docs/Features/FeaturesV1.es.md) |
 | Changelog | [English](CHANGELOG.md) | [Español](CHANGELOG.es.md) |

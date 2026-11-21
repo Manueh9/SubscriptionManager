@@ -75,8 +75,11 @@ Algunos ficheros de test se saltan HTTP por completo, porque lo que cubren se te
 - `DbUpdateExceptionHandlerTests` llama directamente al manejador con un `DbUpdateException` construido a propósito, confirmando que reclama una violación real de `SQLITE_CONSTRAINT` (`409`) pero deja sin capturar un error transitorio como una base de datos bloqueada (así que sigue dando `500`) — una distinción que no es práctica de provocar con una sola petición HTTP manual.
 - `TrySaveChangesTests` ejercita el helper de guardado compartido de los controllers contra una base de datos SQLite en memoria real (sin HTTP), así que además verifica la premisa en la que se apoya el helper: que SQLite realmente informa de un nombre duplicado, un duplicado sin distinguir mayúsculas, y un borrado con `RESTRICT` como violaciones de restricción. Usa a propósito un `DbContext` nuevo por operación, imitando la vida real por petición — compartir un solo contexto dejaría que el *change tracker* de EF se adelantara al `RESTRICT` con su propia excepción antes de que SQLite llegue a ver el borrado.
 - `DatabaseMigrationServiceTests` deja una base de datos real (en una carpeta temporal) congelada en la primera migración, para confirmar que arrancar con una migración pendiente hace copia de seguridad antes de migrar y conserva solo las 10 copias más recientes; y que si no hay ninguna migración pendiente, no toca nada.
+- `StartupSecurityTests` llama directamente a `StartupSecurity.EnsureLoopbackOnly` con distintas URLs, confirmando que acepta `localhost`/`127.0.0.1`/`::1` y rechaza cualquier otra cosa (`0.0.0.0`, una IP de red, `*`, `+`).
 
 `UpcomingRenewalsEndpointsTests` conserva un test de regresión a nivel HTTP para el caso del día 31, confirmando que el controller conecta correctamente de principio a fin con el cálculo de dominio (ya testeado a fondo por separado).
+
+`HostFilteringTests` sí es a nivel HTTP a propósito: comprueba que una petición de verdad con `Host: evil.example` recibe `400` antes de llegar a ningún controller, y que una con `Host: localhost` sigue funcionando con normalidad.
 
 `ExpensesEndpointsTests` y `UpcomingRenewalsEndpointsTests` le dan a cada test su propia `WebApiFactory` (y por tanto su propia base de datos vacía) en vez de compartir una vía `IClassFixture`, porque ambos endpoints agregan todas las suscripciones de la base de datos y de lo contrario verían datos dejados por tests hermanos.
 
@@ -112,4 +115,4 @@ Reproduce el flujo que ya verificamos mientras construíamos la API — un buen 
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-15</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-21</sub></p>

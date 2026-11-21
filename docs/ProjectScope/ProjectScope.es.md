@@ -106,6 +106,7 @@ SubscriptionManager/
 │   │       ├── Infrastructure/
 │   │       │   ├── ArgumentExceptionHandler.cs    # Fallos de validación del dominio -> 400
 │   │       │   ├── DbUpdateExceptionHandler.cs     # Violaciones de restricción de la BD -> 409
+│   │       │   ├── StartupSecurity.cs              # Rechaza arrancar si no es solo loopback
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # Configuración Fluent API de EF Core por entidad
 │   │       │       ├── SubscriptionManagerDbContext.cs
@@ -132,4 +133,4 @@ Lo siguiente **no** forma parte de la v1.0. Podría considerarse en futuras iter
 
 ---
 
-<p align="center"><sub>Última actualización: 2026-11-15</sub></p>
+<p align="center"><sub>Última actualización: 2026-11-21</sub></p>

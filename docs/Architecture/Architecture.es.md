@@ -20,9 +20,11 @@ Todo empieza en `Program.cs`, que se ejecuta de arriba a abajo como una secuenci
 
 ```mermaid
 flowchart TD
-    A["WebApplication.CreateBuilder(args)<br/>lee appsettings.json / appsettings.Development.json<br/>y launchSettings.json"] --> B["Registra servicios en el contenedor de DI:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(ruta resuelta por DatabaseConnectionStringProvider)"]
+    A["WebApplication.CreateBuilder(args)<br/>lee appsettings.json / appsettings.Development.json<br/>y launchSettings.json"] --> K["builder.WebHost.ConfigureKestrel:<br/>MaxRequestBodySize = 10 MB"]
+    K --> B["Registra servicios en el contenedor de DI:<br/>AddControllers, AddOpenApi,<br/>AddExceptionHandler x2, AddProblemDetails,<br/>AddSingleton&lt;TimeProvider&gt;,<br/>AddDbContext&lt;SubscriptionManagerDbContext&gt;<br/>(ruta resuelta por DatabaseConnectionStringProvider)"]
     B --> C["builder.Build()<br/>construye la app y su contenedor de DI"]
-    C --> D["Construye el pipeline de middleware, en orden:<br/>UseExceptionHandler<br/>MapOpenApi (solo en Development)<br/>UseHttpsRedirection<br/>MapControllers"]
+    C --> S["StartupSecurity.EnsureLoopbackOnly(app.Urls)<br/>lanza una excepción y no arranca<br/>si alguna URL no es localhost/127.0.0.1/::1"]
+    S --> D["Construye el pipeline de middleware, en orden:<br/>UseHostFiltering (AllowedHosts: localhost;127.0.0.1;[::1])<br/>UseExceptionHandler<br/>MapOpenApi (solo en Development)<br/>UseHttpsRedirection<br/>MapControllers"]
     D --> G{"¿Entorno == Testing?"}
     G -- "No (app real)" --> H["DatabaseMigrationService.ApplyPendingMigrations:<br/>si hay migración pendiente y el .db ya existe,<br/>copia a backups/ (conserva 10) y migra"]
     G -- "Sí (WebApiFactory de los tests)" --> E
@@ -32,9 +34,10 @@ flowchart TD
 
 Un par de cosas que merece la pena resaltar:
 
-- **El orden importa.** `UseExceptionHandler()` se registra *antes* que `MapControllers()`, así que envuelve cada acción del controller en un try/catch a nivel de middleware — cualquier excepción sin capturar lanzada dentro de una acción se atrapa aquí antes de que, si no, tumbara la petición. Ver [Ciclo de vida de una petición](#-ciclo-de-vida-de-una-petición) más abajo.
+- **El orden importa.** `UseHostFiltering()` va el primero de todos los middlewares — una petición con una cabecera `Host` no permitida se rechaza antes de que nada más la toque. `UseExceptionHandler()` va justo después, así que envuelve cada acción del controller en un try/catch a nivel de middleware — cualquier excepción sin capturar lanzada dentro de una acción se atrapa aquí antes de que, si no, tumbara la petición. Ver [Ciclo de vida de una petición](#-ciclo-de-vida-de-una-petición) más abajo.
 - **`AddDbContext` en sí no toca la base de datos.** Solo registra *cómo* crear un `SubscriptionManagerDbContext` — la ruta por defecto (`%AppData%/SubscriptionManager/data.db`, o la que haya en `ConnectionStrings:DefaultConnection`) se calcula antes, en `DatabaseConnectionStringProvider`, pero la conexión en sí se abre de forma perezosa, la primera vez que algo la usa.
 - **El esquema se migra solo al arrancar, salvo en los tests.** `Program.cs` llama a `DatabaseMigrationService.ApplyPendingMigrations` justo antes de `app.Run()` — si hay una migración pendiente, hace copia de seguridad del `.db` existente (si lo hay) antes de aplicarla. Esto se salta por completo cuando el entorno es `"Testing"` (lo marca `WebApiFactory`), porque ahí la base de datos en memoria se crea de otra forma, vía `EnsureCreated()` — ver [Base de Datos](../Database/Database.es.md) para el detalle de la ubicación y las copias de seguridad.
+- **Esta API no tiene autenticación**, así que dos capas de defensa la protegen de ser alcanzable desde la red: `StartupSecurity.EnsureLoopbackOnly` impide arrancar si está configurada para escuchar en otra interfaz que no sea loopback, y `UseHostFiltering()` (vía la clave `AllowedHosts` de `appsettings.json`) rechaza con `400` cualquier petición cuya cabecera `Host` no sea `localhost`/`127.0.0.1`/`::1` — la defensa habitual contra ataques de *DNS rebinding* desde una pestaña del navegador.
 
 ---
 
@@ -88,7 +91,11 @@ Un párrafo por fichero (o por grupo de ficheros muy relacionados), organizados 
 
 ### `Program.cs`
 
-Compone la aplicación: registra servicios (controllers, OpenAPI, los dos manejadores de excepciones, un `TimeProvider`, el `DbContext`), construye el pipeline de middleware, aplica las migraciones pendientes (salvo en el entorno `"Testing"`) y luego empieza a escuchar. Ver [Secuencia de arranque](#-secuencia-de-arranque) arriba — es el único fichero del proyecto que se ejecuta incondicionalmente al arrancar el proceso.
+Compone la aplicación: configura el límite de subida de Kestrel, registra servicios (controllers, OpenAPI, los dos manejadores de excepciones, un `TimeProvider`, el `DbContext`), comprueba que solo va a escuchar en loopback, construye el pipeline de middleware, aplica las migraciones pendientes (salvo en el entorno `"Testing"`) y luego empieza a escuchar. Ver [Secuencia de arranque](#-secuencia-de-arranque) arriba — es el único fichero del proyecto que se ejecuta incondicionalmente al arrancar el proceso.
+
+### `Infrastructure/StartupSecurity.cs`
+
+Un único método, `EnsureLoopbackOnly`, llamado desde `Program.cs` justo después de `builder.Build()`. Recorre las URLs configuradas (`app.Urls`) y lanza una excepción — impidiendo que la app arranque — si alguna no es `localhost`, `127.0.0.1` o `::1`. Es la garantía en código de que esta API, que no tiene autenticación, nunca escucha accidentalmente en `0.0.0.0` ni en una IP de red real.
 
 ### `Controllers/`
 

@@ -43,7 +43,7 @@
 - [x] `LICENSE` (AGPL-3.0), `CLA.md`, `CONTRIBUTING.md` at the repo root; license section in the README; `THIRD-PARTY-NOTICES.md`.
 - [x] SPDX header (`SPDX-License-Identifier` + `Copyright`) on all 42 existing `.cs` files.
 - [x] Configurable database location (`%AppData%/SubscriptionManager/data.db`) + automatic backup before each migration (keeping the 10 most recent). Pending migrations apply themselves on startup.
-- [ ] Listen only on `127.0.0.1`, validate the `Host` header, dev-only CORS, 10MB upload limit.
+- [x] Listen only on `127.0.0.1` (the app refuses to start otherwise), validate the `Host` header (`400` on anything else), 10MB upload limit. CORS is deferred to Phase 8, once a real frontend exists to configure it against.
 - [ ] Injected `TimeProvider` everywhere "today" matters; Spanish `ProblemDetails` messages.
 
 ## 🧩 Phase 1 — Data Model & Migration

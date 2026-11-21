@@ -106,6 +106,7 @@ SubscriptionManager/
 │   │       ├── Infrastructure/
 │   │       │   ├── ArgumentExceptionHandler.cs    # Domain guard-clause failures -> 400
 │   │       │   ├── DbUpdateExceptionHandler.cs     # DB constraint violations -> 409
+│   │       │   ├── StartupSecurity.cs              # Refuses to start unless loopback-only
 │   │       │   └── Persistence/
 │   │       │       ├── Configurations/ # EF Core Fluent API per entity
 │   │       │       ├── SubscriptionManagerDbContext.cs
@@ -132,4 +133,4 @@ The following are **not** part of v1.0. They may be considered for future iterat
 
 ---
 
-<p align="center"><sub>Last updated: 2026-11-15</sub></p>
+<p align="center"><sub>Last updated: 2026-11-21</sub></p>
